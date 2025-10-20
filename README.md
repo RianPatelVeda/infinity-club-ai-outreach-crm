@@ -1,73 +1,187 @@
 # Infinity Club AI Partner Outreach CRM
 
-## Purpose
+A full-stack CRM application for automated partner outreach, lead scraping, and relationship management.
 
-This repository contains the **Infinity Club AI Partner Outreach CRM** system, designed to streamline and enhance partner outreach operations through AI-powered automation and intelligent relationship management.
+## 🚀 Features
 
-The CRM enables the Infinity Club team to:
-- Manage partner relationships efficiently
-- Automate outreach workflows with AI assistance
-- Track engagement and communication history
-- Analyze partnership opportunities
-- Scale partner acquisition and retention strategies
+- **Lead Search & Scraping**: Automated Google My Business scraping with deduplication
+- **Manual Lead Entry**: Add leads manually with validation
+- **Email Outreach**: Template-based email campaigns with variable substitution
+- **Kanban Board**: Visual pipeline management with drag-and-drop
+- **Dashboard**: Real-time analytics and lead tracking
+- **Outreach History**: Complete audit trail of all communications
 
-## Architecture
+## 🛠️ Tech Stack
 
-This is a **monorepo** containing both frontend and backend applications that work together to deliver a comprehensive CRM solution.
+### Frontend
+- **Next.js 14** (React, TypeScript)
+- **Tailwind CSS** for styling
+- **Supabase Auth** for authentication
+- **React Query** for data fetching
+- **DnD Kit** for drag-and-drop
 
-### Technology Stack
+### Backend
+- **Nest.js** (Node.js framework)
+- **Puppeteer** for web scraping
+- **SendGrid** for email delivery
+- **Supabase** (PostgreSQL database)
 
-**Frontend:**
-- Next.js (React framework)
-- Modern UI components
-- Server-side rendering for optimal performance
-- Type-safe development with TypeScript
+## 📋 Prerequisites
 
-**Backend:**
-- Nest.js (Node.js framework)
-- RESTful API services
-- Microservices architecture
-- Scalable and maintainable design patterns
+Before you begin, ensure you have the following installed:
+- Node.js 18+ and npm
+- Git
 
-## Folder Structure
+You'll also need accounts for:
+- Supabase (free tier)
+- SendGrid (free tier - 100 emails/day)
 
-### `/frontend`
+## 🔧 Installation
 
-Contains the Next.js/React application that provides the user interface for the CRM system.
+### 1. Clone the Repository
 
-- **Purpose:** Client-facing application for partner management
-- **Framework:** Next.js with React
-- **Key Features:**
-  - Partner dashboard and profiles
-  - Outreach campaign management
-  - Analytics and reporting interfaces
-  - AI-powered interaction tools
+```bash
+cd c:\infinity-club-ai-outreach-crm
+```
 
-### `/backend`
+### 2. Install Dependencies
 
-Contains the Nest.js API and backend services that power the CRM functionality.
+```bash
+# Install root dependencies
+npm run install:all
+```
 
-- **Purpose:** API layer and business logic
-- **Framework:** Nest.js
-- **Key Features:**
-  - RESTful API endpoints
-  - Database integration
-  - AI service integrations
-  - Authentication and authorization
-  - Data processing and analytics
+This will install dependencies for both frontend and backend.
 
-## Getting Started
+### 3. Set Up Supabase
 
-Detailed setup instructions for each component will be provided in their respective directories.
+Follow the instructions you received from Perplexity to:
+1. Create a Supabase project
+2. Get your credentials (URL, anon key, service role key)
+3. Run the database schema from `database/schema.sql`
+4. Enable email authentication
 
-1. Clone this repository
-2. Navigate to `/frontend` for frontend setup instructions
-3. Navigate to `/backend` for backend setup instructions
+### 4. Set Up SendGrid
 
-## Development
+1. Go to [SendGrid](https://sendgrid.com) and create a free account
+2. Create an API key with "Full Access"
+3. Verify a sender email address
 
-This project follows monorepo best practices, allowing for coordinated development across both frontend and backend while maintaining clear separation of concerns.
+### 5. Configure Environment Variables
 
-## License
+#### Frontend (.env)
 
-To be determined based on project requirements.
+Create `frontend/.env.local`:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
+NEXT_PUBLIC_API_URL=http://localhost:3001
+```
+
+#### Backend (.env)
+
+Create `backend/.env`:
+
+```bash
+PORT=3001
+NODE_ENV=development
+
+# Supabase
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
+
+# SendGrid
+SENDGRID_API_KEY=SG.your_api_key_here
+SENDGRID_FROM_EMAIL=noreply@yourdomain.com
+
+# Scraping
+SCRAPE_LIMIT=100
+SCRAPE_TIMEOUT=30000
+```
+
+## 🚀 Running the Application
+
+### Development Mode
+
+Run both frontend and backend concurrently:
+
+```bash
+npm run dev
+```
+
+Or run them separately:
+
+```bash
+# Frontend (Terminal 1)
+npm run dev:frontend
+
+# Backend (Terminal 2)
+npm run dev:backend
+```
+
+### Access the Application
+
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:3001
+
+## 👤 First Login
+
+1. Navigate to http://localhost:3000
+2. You'll be redirected to the login page
+3. Click "Don't have an account? Sign up"
+4. Create an account with your email
+5. Sign in and start using the CRM!
+
+## 📚 Using the CRM
+
+### 1. Lead Search & Scraping
+
+1. Navigate to **Lead Search** in the sidebar
+2. Enter a business type (e.g., "Luxury Hotels")
+3. Enter a city (e.g., "New York")
+4. Click **Scrape**
+5. Wait for results (1-2 minutes)
+
+### 2. Email Outreach
+
+1. Go to **Outreach**
+2. Select leads
+3. Click **Create Campaign**
+4. Customize email template
+5. Send or schedule
+
+### 3. Kanban Board
+
+1. Navigate to **Kanban Board**
+2. Drag and drop cards between stages
+3. Click **Confirm Partner** to finalize
+
+## 🐛 Troubleshooting
+
+### Scraping Issues
+- Check internet connection
+- Reduce scrape limit to 50
+- Try again later if blocked
+
+### Email Not Sending
+- Verify SendGrid API key
+- Check sender email is verified
+- Ensure leads have valid emails
+
+### Database Errors
+- Verify Supabase credentials
+- Ensure schema was run successfully
+- Check RLS policies
+
+## 📈 Roadmap (V2)
+
+- [ ] AI phone call outreach (ElevenLabs)
+- [ ] Advanced analytics
+- [ ] Auto-move Kanban on email replies
+- [ ] Email tracking (opens/clicks)
+- [ ] Bulk import/export
+
+## 📄 License
+
+Proprietary - Infinity Club © 2025
