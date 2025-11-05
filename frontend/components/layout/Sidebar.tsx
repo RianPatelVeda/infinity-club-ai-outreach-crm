@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   Search,
-  KanbanSquare,
   Megaphone,
   Settings,
   LogOut
@@ -17,7 +16,6 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Lead Search', href: '/leads/search', icon: Search },
   { name: 'Outreach', href: '/outreach', icon: Megaphone },
-  { name: 'Kanban Board', href: '/kanban', icon: KanbanSquare },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 

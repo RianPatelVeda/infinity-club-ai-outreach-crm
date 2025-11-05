@@ -22,6 +22,20 @@ export class EmailService {
         from: fromEmail,
         subject,
         html,
+        trackingSettings: {
+          clickTracking: {
+            enable: true,
+            enableText: true,
+          },
+          openTracking: {
+            enable: true,
+          },
+        },
+        categories: ['infinity-club-campaign'],
+        customArgs: {
+          campaign_type: 'outreach',
+          sent_from: 'infinity-club-crm',
+        },
       });
 
       console.log(`✅ Email sent to ${to}`);
