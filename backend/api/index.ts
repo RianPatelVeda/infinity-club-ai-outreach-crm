@@ -1,14 +1,16 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../src/app.module';
-import { INestApplication } from '@nestjs/common';
+import { ExpressAdapter } from '@nestjs/platform-express';
+import express from 'express';
 
-let app: INestApplication;
+const server = express();
+let app: any;
 
-async function getApp(): Promise<INestApplication> {
+async function bootstrap() {
   if (!app) {
-    app = await NestFactory.create(AppModule);
+    app = await NestFactory.create(AppModule, new ExpressAdapter(server));
 
-    // Enable CORS for all origins in production (you can restrict this later)
+    // Enable CORS
     app.enableCors({
       origin: true,
       credentials: true,
@@ -16,12 +18,10 @@ async function getApp(): Promise<INestApplication> {
 
     await app.init();
   }
-
   return app;
 }
 
 export default async (req: any, res: any) => {
-  const application = await getApp();
-  const expressApp = application.getHttpAdapter().getInstance();
-  return expressApp(req, res);
+  await bootstrap();
+  server(req, res);
 };
