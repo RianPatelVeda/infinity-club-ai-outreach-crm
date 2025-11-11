@@ -1,16 +1,28 @@
 /** @type {import('next').NextConfig} */
+const backendUrl = process.env.NEXT_PUBLIC_API_URL
+  ? process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, '')
+  : null;
+
 const nextConfig = {
   reactStrictMode: true,
   images: {
     domains: [],
   },
   async rewrites() {
-    return [
-      {
-        source: '/api/backend/:path*',
-        destination: process.env.NEXT_PUBLIC_API_URL + '/:path*',
-      },
-    ];
+    if (!backendUrl) {
+      console.warn(
+        'NEXT_PUBLIC_API_URL is not defined, skipping /api/backend proxy rewrite.'
+      );
+    }
+
+    return backendUrl
+      ? [
+          {
+            source: '/api/backend/:path*',
+            destination: `${backendUrl}/:path*`,
+          },
+        ]
+      : [];
   },
 };
 
