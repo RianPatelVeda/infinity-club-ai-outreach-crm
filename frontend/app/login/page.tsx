@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import toast from "react-hot-toast";
-// new push
+// new pushes
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
