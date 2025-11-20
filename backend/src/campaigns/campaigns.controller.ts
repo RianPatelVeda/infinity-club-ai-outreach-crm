@@ -13,6 +13,7 @@ export class CampaignsController {
       subject: string;
       content: string;
       sendNow: boolean;
+      templateType?: string;
     },
   ) {
     const result = await this.campaignsService.createAndSendCampaign(
@@ -20,6 +21,7 @@ export class CampaignsController {
       body.subject,
       body.content,
       body.sendNow,
+      body.templateType,
     );
 
     return {

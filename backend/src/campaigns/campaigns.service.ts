@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { SupabaseService } from '../common/supabase.service';
 import { EmailService } from './email.service';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class CampaignsService {
@@ -9,11 +11,27 @@ export class CampaignsService {
     private emailService: EmailService,
   ) {}
 
+  private loadTemplate(templateName: string): string {
+    // Use process.cwd() to get the backend folder, then go to templates
+    const templatePath = path.join(
+      process.cwd(),
+      'templates',
+      `${templateName}.html`,
+    );
+
+    if (!fs.existsSync(templatePath)) {
+      throw new Error(`Template ${templateName} not found at ${templatePath}`);
+    }
+
+    return fs.readFileSync(templatePath, 'utf-8');
+  }
+
   async createAndSendCampaign(
     leadIds: string[],
     subject: string,
     content: string,
     sendNow: boolean,
+    templateType?: string,
   ) {
     const supabase = this.supabaseService.getClient();
 
@@ -47,6 +65,26 @@ export class CampaignsService {
     let sentCount = 0;
     let failedCount = 0;
 
+    // Load template if specified
+    let emailContent = content;
+    let emailSubject = subject;
+
+    if (templateType) {
+      try {
+        emailContent = this.loadTemplate(templateType);
+        // Set subject based on template type
+        if (templateType === 'partner_acquisition_email') {
+          emailSubject =
+            'Get Free Marketing & More Customers with Infinity Club – No Catch';
+        } else if (templateType === 'corporate_christmas_gift') {
+          emailSubject = 'A Christmas gift with real local power';
+        }
+      } catch (error) {
+        console.error(`Failed to load template: ${error.message}`);
+        // Fall back to provided content
+      }
+    }
+
     // Send emails
     for (const lead of leads) {
       if (!lead.email) {
@@ -54,23 +92,33 @@ export class CampaignsService {
         continue;
       }
 
-      // Replace variables in content
-      const personalizedContent = this.emailService.replaceVariables(content, {
-        firstName: lead.name.split(' ')[0],
-        companyName: lead.name,
-        yourName: 'Infinity Club Team',
-      });
+      // Replace variables in content - use {name} format
+      const personalizedContent = this.emailService.replaceVariables(
+        emailContent,
+        {
+          name: lead.name,
+          firstName: lead.name.split(' ')[0],
+          companyName: lead.name,
+          yourName: 'Infinity Club Team',
+        },
+      );
 
-      const personalizedSubject = this.emailService.replaceVariables(subject, {
-        firstName: lead.name.split(' ')[0],
-        companyName: lead.name,
-      });
+      const personalizedSubject = this.emailService.replaceVariables(
+        emailSubject,
+        {
+          name: lead.name,
+          firstName: lead.name.split(' ')[0],
+          companyName: lead.name,
+        },
+      );
 
-      // Send email
+      // Send email with tracking
       const success = await this.emailService.sendEmail(
         lead.email,
         personalizedSubject,
         personalizedContent,
+        campaign.id,
+        templateType || 'custom',
       );
 
       // Create campaign recipient record
@@ -90,7 +138,9 @@ export class CampaignsService {
         status: success ? 'sent' : 'failed',
         subject: personalizedSubject,
         content: personalizedContent,
-        metadata: success ? {} : { error: 'Failed to send email' },
+        metadata: success
+          ? { template_type: templateType || 'custom' }
+          : { error: 'Failed to send email', template_type: templateType || 'custom' },
       });
 
       if (success) {

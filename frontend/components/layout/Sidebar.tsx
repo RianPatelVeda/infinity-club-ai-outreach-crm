@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   Search,
   Megaphone,
+  Kanban,
   Settings,
   LogOut
 } from 'lucide-react';
@@ -16,6 +17,7 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Lead Search', href: '/leads/search', icon: Search },
   { name: 'Outreach', href: '/outreach', icon: Megaphone },
+  { name: 'Pipeline', href: '/kanban', icon: Kanban },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 

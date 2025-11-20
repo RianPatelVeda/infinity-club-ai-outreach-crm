@@ -5,7 +5,7 @@ import Header from '@/components/layout/Header';
 import { supabase } from '@/lib/supabase';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
-import { Send, Mail } from 'lucide-react';
+import { Send, Mail, Edit2, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { EMAIL_TEMPLATES } from '@/lib/emailTemplates';
 
@@ -16,6 +16,9 @@ interface Lead {
   business_type: string;
   city: string;
   status: string;
+  phone: string | null;
+  website: string | null;
+  notes: string | null;
   created_at: string;
 }
 
@@ -25,6 +28,8 @@ export default function OutreachPage() {
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
+  const [editingLead, setEditingLead] = useState<Lead | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   useEffect(() => {
     fetchLeads();
@@ -67,6 +72,55 @@ export default function OutreachPage() {
     }
   };
 
+  const handleDeleteLead = async (leadId: string, leadName: string) => {
+    if (!confirm(`Are you sure you want to delete "${leadName}"?`)) {
+      return;
+    }
+
+    try {
+      await api.delete(`/leads/${leadId}`);
+      toast.success('Lead deleted successfully');
+      await fetchLeads();
+      // Remove from selection if it was selected
+      const newSelection = new Set(selectedLeads);
+      newSelection.delete(leadId);
+      setSelectedLeads(newSelection);
+    } catch (error: any) {
+      console.error('Delete error:', error);
+      toast.error(error.response?.data?.message || 'Failed to delete lead');
+    }
+  };
+
+  const handleEditLead = (lead: Lead) => {
+    setEditingLead(lead);
+    setShowEditModal(true);
+  };
+
+  const handleUpdateLead = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingLead) return;
+
+    try {
+      await api.put(`/leads/${editingLead.id}`, {
+        name: editingLead.name,
+        email: editingLead.email,
+        phone: editingLead.phone,
+        business_type: editingLead.business_type,
+        city: editingLead.city,
+        website: editingLead.website,
+        notes: editingLead.notes,
+      });
+
+      toast.success('Lead updated successfully');
+      setShowEditModal(false);
+      setEditingLead(null);
+      await fetchLeads();
+    } catch (error: any) {
+      console.error('Update error:', error);
+      toast.error(error.response?.data?.message || 'Failed to update lead');
+    }
+  };
+
   const handleSendCampaign = async () => {
     if (selectedLeads.size === 0) {
       toast.error('Please select at least one lead');
@@ -88,6 +142,7 @@ export default function OutreachPage() {
         subject: template.subject,
         content: template.html,
         sendNow: true,
+        templateType: template.id === 'partner' ? 'partner_acquisition_email' : 'corporate_christmas_gift',
       });
 
       toast.success(`Campaign sent to ${selectedLeads.size} leads!`);
@@ -161,6 +216,7 @@ export default function OutreachPage() {
                         <th>CITY</th>
                         <th>EMAIL</th>
                         <th>ADDED</th>
+                        <th className="w-24">ACTIONS</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -180,6 +236,24 @@ export default function OutreachPage() {
                           <td className="text-sm text-gray-600">{lead.email}</td>
                           <td className="text-sm text-gray-500">
                             {format(new Date(lead.created_at), 'MMM d, yyyy')}
+                          </td>
+                          <td>
+                            <div className="flex items-center space-x-2">
+                              <button
+                                onClick={() => handleEditLead(lead)}
+                                className="p-1.5 hover:bg-blue-50 rounded text-blue-600 transition-colors"
+                                title="Edit lead"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteLead(lead.id, lead.name)}
+                                className="p-1.5 hover:bg-red-50 rounded text-red-600 transition-colors"
+                                title="Delete lead"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -269,6 +343,114 @@ export default function OutreachPage() {
           </div>
         </div>
       </div>
+
+      {/* Edit Lead Modal */}
+      {showEditModal && editingLead && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full p-6">
+            <h2 className="text-2xl font-bold mb-4">Edit Lead</h2>
+            <form onSubmit={handleUpdateLead}>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Business Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={editingLead.name}
+                    onChange={(e) => setEditingLead({ ...editingLead, name: e.target.value })}
+                    className="input"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Business Type *
+                  </label>
+                  <input
+                    type="text"
+                    value={editingLead.business_type}
+                    onChange={(e) => setEditingLead({ ...editingLead, business_type: e.target.value })}
+                    className="input"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    City *
+                  </label>
+                  <input
+                    type="text"
+                    value={editingLead.city}
+                    onChange={(e) => setEditingLead({ ...editingLead, city: e.target.value })}
+                    className="input"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={editingLead.email || ''}
+                    onChange={(e) => setEditingLead({ ...editingLead, email: e.target.value })}
+                    className="input"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Phone
+                  </label>
+                  <input
+                    type="tel"
+                    value={editingLead.phone || ''}
+                    onChange={(e) => setEditingLead({ ...editingLead, phone: e.target.value })}
+                    className="input"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Website
+                  </label>
+                  <input
+                    type="url"
+                    value={editingLead.website || ''}
+                    onChange={(e) => setEditingLead({ ...editingLead, website: e.target.value })}
+                    className="input"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Notes
+                  </label>
+                  <textarea
+                    value={editingLead.notes || ''}
+                    onChange={(e) => setEditingLead({ ...editingLead, notes: e.target.value })}
+                    className="input"
+                    rows={3}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setEditingLead(null);
+                  }}
+                  className="btn btn-secondary"
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

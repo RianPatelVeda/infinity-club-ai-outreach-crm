@@ -88,11 +88,11 @@ export class ScrapeService {
       if (!existingStages || existingStages.length === 0) {
         console.log('📋 Creating default kanban stages...');
         await supabase.from('kanban_stages').insert([
-          { name: 'First Contact', position: 1, color: '#3B82F6' },
-          { name: 'Follow-up', position: 2, color: '#F59E0B' },
-          { name: 'Negotiation', position: 3, color: '#8B5CF6' },
-          { name: 'Potential Partner', position: 4, color: '#10B981' },
-          { name: 'Confirmed Partner', position: 5, color: '#059669' },
+          { name: 'Not Contacted', position: 1, color: '#94A3B8' },
+          { name: 'Contacted - Christmas', position: 2, color: '#F59E0B' },
+          { name: 'Contacted - Partner', position: 3, color: '#8B5CF6' },
+          { name: 'Employee Benefit Business', position: 4, color: '#10B981' },
+          { name: 'Partner', position: 5, color: '#059669' },
         ]);
         console.log('✅ Kanban stages created');
       }
@@ -188,17 +188,17 @@ export class ScrapeService {
 
         console.log(`✅ Added lead: ${business.name}`);
 
-        // Add to kanban (first contact stage)
-        const { data: firstStage } = await supabase
+        // Add to kanban (Not Contacted stage)
+        const { data: notContactedStage } = await supabase
           .from('kanban_stages')
           .select('id')
-          .eq('name', 'First Contact')
+          .eq('name', 'Not Contacted')
           .maybeSingle();
 
-        if (firstStage) {
+        if (notContactedStage) {
           await supabase.from('lead_kanban').insert({
             lead_id: newLead.id,
-            stage_id: firstStage.id,
+            stage_id: notContactedStage.id,
             position: 0,
           });
         }

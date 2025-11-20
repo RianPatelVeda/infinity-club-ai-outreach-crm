@@ -11,7 +11,13 @@ export class EmailService {
     }
   }
 
-  async sendEmail(to: string, subject: string, html: string): Promise<boolean> {
+  async sendEmail(
+    to: string,
+    subject: string,
+    html: string,
+    campaignId?: string,
+    templateType?: string,
+  ): Promise<boolean> {
     const fromEmail =
       this.configService.get<string>('SENDGRID_FROM_EMAIL') ||
       'noreply@infinityclub.com';
@@ -31,14 +37,16 @@ export class EmailService {
             enable: true,
           },
         },
-        categories: ['infinity-club-campaign'],
+        categories: ['infinity-club-campaign', templateType || 'custom'],
         customArgs: {
           campaign_type: 'outreach',
           sent_from: 'infinity-club-crm',
+          campaign_id: campaignId || '',
+          template_type: templateType || 'custom',
         },
       });
 
-      console.log(`✅ Email sent to ${to}`);
+      console.log(`✅ Email sent to ${to} (Template: ${templateType || 'custom'})`);
       return true;
     } catch (error) {
       console.error(`❌ Failed to send email to ${to}:`, error);

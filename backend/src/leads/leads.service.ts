@@ -61,21 +61,65 @@ export class LeadsService {
       throw new Error(`Failed to create lead: ${error.message}`);
     }
 
-    // Add to kanban (first contact stage)
-    const { data: firstStage } = await supabase
+    // Add to kanban (Not Contacted stage)
+    const { data: notContactedStage } = await supabase
       .from('kanban_stages')
       .select('id')
-      .eq('name', 'First Contact')
+      .eq('name', 'Not Contacted')
       .single();
 
-    if (firstStage) {
+    if (notContactedStage) {
       await supabase.from('lead_kanban').insert({
         lead_id: lead.id,
-        stage_id: firstStage.id,
+        stage_id: notContactedStage.id,
         position: 0,
       });
     }
 
     return lead;
+  }
+
+  async updateLead(
+    id: string,
+    updates: {
+      name?: string;
+      business_type?: string;
+      city?: string;
+      website?: string;
+      phone?: string;
+      email?: string;
+      notes?: string;
+    },
+  ) {
+    const supabase = this.supabaseService.getClient();
+
+    const { data: lead, error } = await supabase
+      .from('leads')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to update lead: ${error.message}`);
+    }
+
+    return lead;
+  }
+
+  async deleteLead(id: string) {
+    const supabase = this.supabaseService.getClient();
+
+    // Delete kanban entries first (foreign key constraint)
+    await supabase.from('lead_kanban').delete().eq('lead_id', id);
+
+    // Delete the lead
+    const { error } = await supabase.from('leads').delete().eq('id', id);
+
+    if (error) {
+      throw new Error(`Failed to delete lead: ${error.message}`);
+    }
+
+    return true;
   }
 }
