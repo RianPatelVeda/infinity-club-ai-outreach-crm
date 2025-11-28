@@ -7,9 +7,9 @@ export interface EmailTemplate {
 
 export const EMAIL_TEMPLATES: EmailTemplate[] = [
   {
-    id: 'partner',
-    name: 'Partner Outreach - Free Marketing',
-    subject: 'Get Free Marketing & More Customers with Infinity Club',
+    id: "partner",
+    name: "Partner Outreach - Free Marketing",
+    subject: "Get Free Marketing & More Customers with Infinity Club",
     html: `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -181,7 +181,7 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
                         <td class="content">
                             <h1>Get Free Marketing & More Customers with Infinity Club</h1>
 
-                            <p>Hey,</p>
+                            <p>Hey {name},</p>
 
                             <div class="hook">
                                 Want more customers. More loyalty. More visibility – all for free?
@@ -205,10 +205,7 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
                                     <span class="benefit-icon">👥</span>
                                     Access to our <strong>rapidly growing member base</strong>
                                 </div>
-                                <div class="benefit-item">
-                                    <span class="benefit-icon">🎥</span>
-                                    <strong>High-quality content</strong> – reels, promos, features – made by our team
-                                </div>
+                                
                                 <div class="benefit-item">
                                     <span class="benefit-icon">📈</span>
                                     More <strong>footfall, stronger loyalty</strong>, and higher visibility at zero cost
@@ -233,7 +230,7 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
                             </p>
 
                             <div class="cta-section">
-                                <a href="https://www.infinityclub.com/partner-signup" class="cta-button">🚀 Register Your Business Today</a>
+                                <a href="https://infinityclub.com/partners" class="cta-button">🚀 Register Your Business Today</a>
                                 <p style="margin-top: 20px; color: #666666;">Claim your free spot now</p>
                             </div>
 
@@ -281,12 +278,12 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
         </tr>
     </table>
 </body>
-</html>`
+</html>`,
   },
   {
-    id: 'christmas',
-    name: 'Christmas Pass - Team Gift',
-    subject: 'A Christmas gift with real local power',
+    id: "christmas",
+    name: "Christmas Pass - Team Gift",
+    subject: "A Christmas gift with real local power",
     html: `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -420,7 +417,7 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
                         <td class="content">
                             <h1>A Christmas gift with real local power</h1>
 
-                            <p>Dear <strong>[Name]</strong>,</p>
+                            <p>Dear <strong>{name}</strong>,</p>
 
                             <p>I'm reaching out with a special Christmas offer built for businesses that truly care about their people, their city, and their community.</p>
 
@@ -489,6 +486,6 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
         </tr>
     </table>
 </body>
-</html>`
-  }
+</html>`,
+  },
 ];

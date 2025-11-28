@@ -60,7 +60,8 @@ export class EmailService {
   ): string {
     let result = content;
     Object.entries(variables).forEach(([key, value]) => {
-      const regex = new RegExp(`{${key}}`, 'g');
+      // Support both {name} and [Name] style placeholders (case-insensitive)
+      const regex = new RegExp(`[\\[{]${key}[\\]}]`, 'gi');
       result = result.replace(regex, value);
     });
     return result;
