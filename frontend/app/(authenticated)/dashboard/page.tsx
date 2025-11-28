@@ -29,6 +29,10 @@ interface Lead {
   status: string;
   source: string;
   created_at: string;
+  enrichment_status?: {
+    email_verified?: boolean;
+    phone_verified?: boolean;
+  };
 }
 
 export default function DashboardPage() {
@@ -44,6 +48,7 @@ export default function DashboardPage() {
   });
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
+  const [leadFilter, setLeadFilter] = useState<'All Leads' | 'New' | 'Enriched' | 'Contacted'>('All Leads');
 
   useEffect(() => {
     fetchDashboardData();
@@ -65,8 +70,7 @@ export default function DashboardPage() {
       const { data: allLeads, error: leadsError } = await supabase
         .from('leads')
         .select('*')
-        .order('created_at', { ascending: false })
-        .limit(5);
+        .order('created_at', { ascending: false });
 
       if (leadsError) throw leadsError;
       setLeads(allLeads || []);
@@ -149,7 +153,48 @@ export default function DashboardPage() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getLeadCategory = (lead: Lead): 'New' | 'Enriched' | 'Contacted' => {
+    const statusLower = String(lead.status || '').trim().toLowerCase();
+
+    // Primary: trust explicit status values from Supabase
+    if (statusLower === 'enriched') {
+      return 'Enriched';
+    }
+    if (statusLower === 'contacted') {
+      return 'Contacted';
+    }
+
+    if (['replied', 'in-progress'].includes(statusLower)) {
+      return 'Contacted';
+    }
+
+    // Treat missing or "not contacted" style statuses as new
+    if (
+      statusLower === 'new' ||
+      statusLower === '' ||
+      statusLower === 'not_contacted' ||
+      statusLower === 'not contacted'
+    ) {
+      return 'New';
+    }
+
+    // Fallbacks when status is blank
+    if (!statusLower) {
+      if (lead.enrichment_status?.email_verified || lead.enrichment_status?.phone_verified) {
+        return 'Enriched';
+      }
+    }
+
+    return 'New';
+  };
+
+  const filteredLeads = leads.filter((lead) => {
+    if (leadFilter === 'All Leads') return true;
+    return getLeadCategory(lead) === leadFilter;
+  });
+
+  const getStatusBadge = (lead: Lead) => {
+    const status = getLeadCategory(lead) === 'Enriched' ? 'enriched' : lead.status;
     const statusMap: Record<string, string> = {
       new: 'badge-info',
       enriched: 'badge-aqua',
@@ -256,8 +301,12 @@ export default function DashboardPage() {
         <div className="card">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold">MY LEADS</h2>
-            <div className="flex items-center space-x-3">
-              <select className="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+          <div className="flex items-center space-x-3">
+              <select
+                value={leadFilter}
+                onChange={(e) => setLeadFilter(e.target.value as typeof leadFilter)}
+                className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              >
                 <option>All Leads</option>
                 <option>New</option>
                 <option>Enriched</option>
@@ -295,7 +344,7 @@ export default function DashboardPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {leads.map((lead) => (
+                  {filteredLeads.map((lead) => (
                     <tr key={lead.id}>
                       <td>
                         <div>
@@ -309,7 +358,7 @@ export default function DashboardPage() {
                           <p className="text-xs text-gray-500">{lead.phone || 'No phone'}</p>
                         </div>
                       </td>
-                      <td>{getStatusBadge(lead.status)}</td>
+                      <td>{getStatusBadge(lead)}</td>
                       <td className="text-sm text-gray-600">
                         {lead.source === 'manual' ? 'Manual Entry' : `Email Sent: ${format(new Date(lead.created_at), 'MMM d')}`}
                       </td>
@@ -326,7 +375,7 @@ export default function DashboardPage() {
           )}
 
           <div className="mt-6 text-sm text-gray-500 text-center">
-            Showing 1 to {Math.min(5, leads.length)} of {stats.newLeads + stats.enrichedLeads + stats.engaged} results
+            Showing {filteredLeads.length} result{filteredLeads.length === 1 ? '' : 's'}
           </div>
         </div>
       </div>

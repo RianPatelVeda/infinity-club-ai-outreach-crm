@@ -22,6 +22,8 @@ interface Lead {
   date_scraped: string;
 }
 
+type StatusFilter = 'All' | 'Enriched' | 'Contact Missing' | 'New';
+
 export default function LeadSearchPage() {
   const [businessType, setBusinessType] = useState('');
   const [city, setCity] = useState('');
@@ -37,7 +39,9 @@ export default function LeadSearchPage() {
   const [currentPostcode, setCurrentPostcode] = useState('');
   const [totalPostcodes, setTotalPostcodes] = useState(0);
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
-  const [statusFilter, setStatusFilter] = useState('All');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('All');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 25;
   const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
   const [showManualEntryModal, setShowManualEntryModal] = useState(false);
   const [manualLead, setManualLead] = useState({
@@ -214,13 +218,68 @@ export default function LeadSearchPage() {
     }
   };
 
-  const filteredLeads = leads.filter(lead => {
+  const filteredLeads = leads.filter((lead) => {
     if (statusFilter === 'All') return true;
-    return lead.status.toLowerCase().includes(statusFilter.toLowerCase());
+
+    const statusLower = String(lead.status || '').trim().toLowerCase();
+    const hasEnrichment =
+      !!lead.enrichment_status?.email_verified ||
+      !!lead.enrichment_status?.phone_verified ||
+      !!lead.enrichment_status?.enrichment_used;
+    const isContactMissing =
+      statusLower === 'contact-missing' || (!lead.email && !lead.phone);
+    const isNewStatus =
+      statusLower === 'new' ||
+      statusLower === 'not_contacted' ||
+      statusLower === 'not contacted' ||
+      statusLower === '';
+
+    if (statusFilter === 'Enriched') {
+      return hasEnrichment || statusLower === 'enriched';
+    }
+
+    if (statusFilter === 'Contact Missing') {
+      return isContactMissing;
+    }
+
+    if (statusFilter === 'New') {
+      return isNewStatus;
+    }
+
+    return true;
   });
+
+  // Pagination derived data
+  const totalPages = Math.max(1, Math.ceil(filteredLeads.length / pageSize));
+  const clampedPage = Math.min(currentPage, totalPages);
+  const pageStart = (clampedPage - 1) * pageSize;
+  const pagedLeads = filteredLeads.slice(pageStart, pageStart + pageSize);
+  const pageNumbers: (number | '...')[] = (() => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    return [1, 2, 3, '...', totalPages - 2, totalPages - 1, totalPages];
+  })();
 
   const getStatusBadge = (lead: Lead) => {
     const badges = [];
+    const statusLabel = (lead.status && lead.status.trim()) ? lead.status : 'New';
+    const statusLower = statusLabel.toLowerCase();
+
+    const statusClassMap: Record<string, string> = {
+      new: 'badge-info',
+      enriched: 'badge-aqua',
+      contacted: 'badge-warning',
+      replied: 'badge-success',
+      'in-progress': 'badge-success',
+      'contact-missing': 'badge-warning',
+    };
+
+    badges.push(
+      <span key="status" className={`badge ${statusClassMap[statusLower] || 'badge-info'}`}>
+        {statusLabel}
+      </span>
+    );
 
     if (lead.enrichment_status?.phone_verified) {
       badges.push(<span key="phone" className="badge badge-success">Phone Verified</span>);
@@ -233,9 +292,6 @@ export default function LeadSearchPage() {
     }
     if (!lead.email && !lead.phone) {
       badges.push(<span key="missing" className="badge badge-warning">Contact Missing</span>);
-    }
-    if (badges.length === 0) {
-      badges.push(<span key="new" className="badge badge-info">New</span>);
     }
 
     return <div className="flex flex-wrap gap-1">{badges}</div>;
@@ -464,7 +520,7 @@ export default function LeadSearchPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredLeads.map((lead) => (
+                      {pagedLeads.map((lead) => (
                         <tr key={lead.id}>
                           <td>
                             <input
@@ -505,20 +561,40 @@ export default function LeadSearchPage() {
 
                 <div className="mt-6 flex items-center justify-between">
                   <p className="text-sm text-gray-500">
-                    Showing 1-{Math.min(4, filteredLeads.length)} of {filteredLeads.length} results
+                    Showing {pageStart + 1}-{Math.min(pageStart + pageSize, filteredLeads.length)} of {filteredLeads.length} results
                   </p>
                   <div className="flex items-center space-x-2">
-                    <button className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50">
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={clampedPage === 1}
+                      className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                    >
                       Previous
                     </button>
-                    <button className="px-3 py-1 bg-aqua rounded-lg">1</button>
-                    <button className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50">
-                      2
-                    </button>
-                    <button className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50">
-                      3
-                    </button>
-                    <button className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50">
+                    {pageNumbers.map((page, idx) =>
+                      page === '...' ? (
+                        <span key={`ellipsis-${idx}`} className="px-2 text-sm text-gray-500">
+                          ...
+                        </span>
+                      ) : (
+                        <button
+                          key={page}
+                          onClick={() => setCurrentPage(page)}
+                          className={`px-3 py-1 rounded-lg border ${
+                            page === clampedPage
+                              ? 'bg-aqua text-white border-aqua'
+                              : 'border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      )
+                    )}
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={clampedPage === totalPages}
+                      className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                    >
                       Next
                     </button>
                   </div>
@@ -528,7 +604,7 @@ export default function LeadSearchPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredLeads.map((lead) => (
+            {pagedLeads.map((lead) => (
               <div key={lead.id} className="card hover:shadow-lg transition-shadow cursor-pointer">
                 <div className="flex items-start justify-between mb-3">
                   <h3 className="font-bold text-lg">{lead.name}</h3>
