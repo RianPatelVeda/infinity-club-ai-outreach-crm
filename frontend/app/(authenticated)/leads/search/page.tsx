@@ -449,7 +449,7 @@ export default function LeadSearchPage() {
             <Filter className="w-5 h-5 text-gray-400" />
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
               className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
             >
               <option>All</option>
