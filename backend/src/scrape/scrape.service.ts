@@ -207,6 +207,22 @@ export class ScrapeService {
       }
 
       console.log(`🎉 Successfully added ${leads.length} new leads to database`);
+
+      // Track scraping metrics
+      const withEmail = leads.filter((l) => l.email).length;
+      const withPhone = leads.filter((l) => l.phone).length;
+
+      await supabase.from('scraping_metrics').insert({
+        business_type: businessType,
+        city: city,
+        total_found: businesses.length,
+        with_email: withEmail,
+        with_phone: withPhone,
+        successful_imports: leads.length,
+      });
+
+      console.log(`📊 Scraping metrics: ${businesses.length} found, ${leads.length} imported, ${withEmail} with email, ${withPhone} with phone`);
+
       return leads;
     } catch (error) {
       console.error('Scraping error:', error);

@@ -5,7 +5,7 @@ import Header from '@/components/layout/Header';
 import { supabase } from '@/lib/supabase';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
-import { Mail, CheckCircle, Gift, Briefcase } from 'lucide-react';
+import { Mail, CheckCircle, Gift, Briefcase, Eye, MousePointerClick, XCircle } from 'lucide-react';
 
 interface Lead {
   id: string;
@@ -27,6 +27,10 @@ interface KanbanCard extends Lead {
     subject: string;
     metadata: any;
     created_at: string;
+    opened: boolean;
+    clicked: boolean;
+    bounced: boolean;
+    delivered: boolean;
   }>;
 }
 
@@ -132,7 +136,7 @@ export default function KanbanPage() {
     const leadIds = kanbanData?.map(k => k.lead_id) || [];
     const { data: outreachData } = await supabase
       .from('outreach_history')
-      .select('lead_id, type, subject, metadata, created_at')
+      .select('lead_id, type, subject, metadata, created_at, opened, clicked, bounced, delivered')
       .in('lead_id', leadIds)
       .order('created_at', { ascending: false });
 
@@ -208,10 +212,19 @@ export default function KanbanPage() {
   const getEmailStats = (card: KanbanCard) => {
     const emails = card.outreach_history?.filter(h => h.type === 'email') || [];
     const templateType = emails[0]?.metadata?.template_type;
+    const hasOpened = emails.some(e => e.opened);
+    const hasClicked = emails.some(e => e.clicked);
+    const hasBounced = emails.some(e => e.bounced);
+    const allDelivered = emails.length > 0 && emails.every(e => e.delivered);
+
     return {
       count: emails.length,
       templateType: templateType || 'none',
       lastSent: emails[0]?.created_at,
+      hasOpened,
+      hasClicked,
+      hasBounced,
+      allDelivered,
     };
   };
 
@@ -273,13 +286,42 @@ export default function KanbanPage() {
 
                         {emailStats.count > 0 && (
                           <div className="bg-blue-50 border border-blue-200 rounded p-2 mb-3 text-xs">
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-center justify-between mb-2">
                               <span className="text-blue-700 font-medium">
                                 {emailStats.count} email{emailStats.count > 1 ? 's' : ''} sent
                               </span>
                             </div>
+
+                            {/* Engagement Indicators */}
+                            <div className="flex items-center gap-2 flex-wrap mb-2">
+                              {emailStats.allDelivered && (
+                                <span className="inline-flex items-center gap-1 bg-green-100 text-green-700 px-2 py-1 rounded text-xs">
+                                  <CheckCircle className="w-3 h-3" />
+                                  Delivered
+                                </span>
+                              )}
+                              {emailStats.hasOpened && (
+                                <span className="inline-flex items-center gap-1 bg-teal-100 text-teal-700 px-2 py-1 rounded text-xs">
+                                  <Eye className="w-3 h-3" />
+                                  Opened
+                                </span>
+                              )}
+                              {emailStats.hasClicked && (
+                                <span className="inline-flex items-center gap-1 bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs">
+                                  <MousePointerClick className="w-3 h-3" />
+                                  Clicked
+                                </span>
+                              )}
+                              {emailStats.hasBounced && (
+                                <span className="inline-flex items-center gap-1 bg-red-100 text-red-700 px-2 py-1 rounded text-xs">
+                                  <XCircle className="w-3 h-3" />
+                                  Bounced
+                                </span>
+                              )}
+                            </div>
+
                             {emailStats.templateType !== 'none' && (
-                              <p className="text-blue-600 mt-1">
+                              <p className="text-blue-600">
                                 Template: {emailStats.templateType === 'partner_acquisition_email' ? 'Partner' : 'Christmas'}
                               </p>
                             )}

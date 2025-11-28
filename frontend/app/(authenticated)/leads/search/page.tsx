@@ -5,7 +5,7 @@ import Header from '@/components/layout/Header';
 import { supabase } from '@/lib/supabase';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
-import { Sparkles, Table as TableIcon, Grid, Filter } from 'lucide-react';
+import { Sparkles, Table as TableIcon, Grid, Filter, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { UK_CITIES, BUSINESS_CATEGORIES } from '@/lib/uk-locations';
 
@@ -184,6 +184,33 @@ export default function LeadSearchPage() {
       setSelectedLeads(new Set());
     } else {
       setSelectedLeads(new Set(filteredLeads.map(l => l.id)));
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedLeads.size === 0) {
+      toast.error('Please select leads to delete');
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to delete ${selectedLeads.size} lead(s)? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      // Delete each selected lead
+      const deletePromises = Array.from(selectedLeads).map(leadId =>
+        api.delete(`/leads/${leadId}`)
+      );
+
+      await Promise.all(deletePromises);
+
+      toast.success(`Successfully deleted ${selectedLeads.size} lead(s)`);
+      setSelectedLeads(new Set());
+      await fetchLeads();
+    } catch (error: any) {
+      console.error('Delete error:', error);
+      toast.error(error.response?.data?.message || 'Failed to delete leads');
     }
   };
 
@@ -540,6 +567,13 @@ export default function LeadSearchPage() {
             <p className="text-sm font-medium">{selectedLeads.size} leads selected</p>
             <button className="btn btn-primary">Add to Campaign</button>
             <button className="btn btn-secondary">Export</button>
+            <button
+              onClick={handleDeleteSelected}
+              className="btn bg-red-500 hover:bg-red-600 text-white flex items-center space-x-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>Delete</span>
+            </button>
           </div>
         )}
 

@@ -7,6 +7,7 @@ import {
   Search,
   Megaphone,
   Kanban,
+  BarChart3,
   Settings,
   LogOut
 } from 'lucide-react';
@@ -18,6 +19,7 @@ const navigation = [
   { name: 'Lead Search', href: '/leads/search', icon: Search },
   { name: 'Outreach', href: '/outreach', icon: Megaphone },
   { name: 'Pipeline', href: '/kanban', icon: Kanban },
+  { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 

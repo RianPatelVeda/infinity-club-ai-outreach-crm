@@ -150,6 +150,33 @@ export class CampaignsService {
           .from('leads')
           .update({ status: 'contacted' })
           .eq('id', lead.id);
+
+        // Move lead to appropriate kanban stage based on template type
+        if (templateType) {
+          let stageName = '';
+          if (templateType === 'corporate_christmas_gift') {
+            stageName = 'Contacted - Christmas';
+          } else if (templateType === 'partner_acquisition_email') {
+            stageName = 'Contacted - Partner';
+          }
+
+          if (stageName) {
+            // Get the stage ID
+            const { data: stage } = await supabase
+              .from('kanban_stages')
+              .select('id')
+              .eq('name', stageName)
+              .single();
+
+            if (stage) {
+              // Update lead's kanban stage
+              await supabase
+                .from('lead_kanban')
+                .update({ stage_id: stage.id })
+                .eq('lead_id', lead.id);
+            }
+          }
+        }
       } else {
         failedCount++;
       }
