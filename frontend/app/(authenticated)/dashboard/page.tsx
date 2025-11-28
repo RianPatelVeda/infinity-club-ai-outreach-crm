@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Header from '@/components/layout/Header';
 import { supabase } from '@/lib/supabase';
+import api from '@/lib/api';
 import { ArrowUp, ArrowDown, Plus, MoreVertical } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
@@ -49,6 +50,9 @@ export default function DashboardPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [leadFilter, setLeadFilter] = useState<'All Leads' | 'New' | 'Enriched' | 'Contacted'>('All Leads');
+  const [actionMenuLeadId, setActionMenuLeadId] = useState<string | null>(null);
+  const [editingLead, setEditingLead] = useState<Lead | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   useEffect(() => {
     fetchDashboardData();
@@ -186,6 +190,46 @@ export default function DashboardPage() {
     }
 
     return 'New';
+  };
+
+  const handleDeleteLead = async (leadId: string, leadName: string) => {
+    if (!confirm(`Delete lead "${leadName}"? This cannot be undone.`)) return;
+    try {
+      await api.delete(`/leads/${leadId}`);
+      setActionMenuLeadId(null);
+      await fetchDashboardData();
+    } catch (error: any) {
+      console.error('Delete error:', error);
+      alert(error.response?.data?.message || 'Failed to delete lead');
+    }
+  };
+
+  const handleEditLead = (lead: Lead) => {
+    setEditingLead(lead);
+    setShowEditModal(true);
+    setActionMenuLeadId(null);
+  };
+
+  const handleUpdateLead = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingLead) return;
+    try {
+      await api.put(`/leads/${editingLead.id}`, {
+        name: editingLead.name,
+        email: editingLead.email,
+        phone: editingLead.phone,
+        business_type: editingLead.business_type,
+        city: editingLead.city,
+        website: editingLead.website,
+        status: editingLead.status,
+      });
+      setShowEditModal(false);
+      setEditingLead(null);
+      await fetchDashboardData();
+    } catch (error: any) {
+      console.error('Update error:', error);
+      alert(error.response?.data?.message || 'Failed to update lead');
+    }
   };
 
   const filteredLeads = leads.filter((lead) => {
@@ -362,10 +406,31 @@ export default function DashboardPage() {
                       <td className="text-sm text-gray-600">
                         {lead.source === 'manual' ? 'Manual Entry' : `Email Sent: ${format(new Date(lead.created_at), 'MMM d')}`}
                       </td>
-                      <td>
-                        <button className="p-1 hover:bg-gray-100 rounded">
+                      <td className="relative">
+                        <button
+                          onClick={() =>
+                            setActionMenuLeadId((prev) => (prev === lead.id ? null : lead.id))
+                          }
+                          className="p-1 hover:bg-gray-100 rounded"
+                        >
                           <MoreVertical className="w-4 h-4 text-gray-400" />
                         </button>
+                        {actionMenuLeadId === lead.id && (
+                          <div className="absolute right-0 mt-1 w-36 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+                            <button
+                              className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50"
+                              onClick={() => handleEditLead(lead)}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+                              onClick={() => handleDeleteLead(lead.id, lead.name)}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -379,6 +444,116 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Edit Lead Modal */}
+      {showEditModal && editingLead && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full p-6">
+            <h2 className="text-2xl font-bold mb-4">Edit Lead</h2>
+            <form onSubmit={handleUpdateLead}>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Business Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={editingLead.name}
+                    onChange={(e) => setEditingLead({ ...editingLead, name: e.target.value })}
+                    className="input w-full"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Business Type *
+                  </label>
+                  <input
+                    type="text"
+                    value={editingLead.business_type}
+                    onChange={(e) =>
+                      setEditingLead({ ...editingLead, business_type: e.target.value })
+                    }
+                    className="input w-full"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    City *
+                  </label>
+                  <input
+                    type="text"
+                    value={editingLead.city}
+                    onChange={(e) => setEditingLead({ ...editingLead, city: e.target.value })}
+                    className="input w-full"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={editingLead.email || ''}
+                    onChange={(e) => setEditingLead({ ...editingLead, email: e.target.value })}
+                    className="input w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Phone
+                  </label>
+                  <input
+                    type="tel"
+                    value={editingLead.phone || ''}
+                    onChange={(e) => setEditingLead({ ...editingLead, phone: e.target.value })}
+                    className="input w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Website
+                  </label>
+                  <input
+                    type="url"
+                    value={editingLead.website || ''}
+                    onChange={(e) => setEditingLead({ ...editingLead, website: e.target.value })}
+                    className="input w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Status
+                  </label>
+                  <input
+                    type="text"
+                    value={editingLead.status}
+                    onChange={(e) => setEditingLead({ ...editingLead, status: e.target.value })}
+                    className="input w-full"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setEditingLead(null);
+                  }}
+                  className="btn btn-secondary"
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -5,9 +5,10 @@ import Header from '@/components/layout/Header';
 import { supabase } from '@/lib/supabase';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
-import { Sparkles, Table as TableIcon, Grid, Filter, Trash2 } from 'lucide-react';
+import { Sparkles, Table as TableIcon, Grid, Filter, Trash2, MoreVertical } from 'lucide-react';
 import { format } from 'date-fns';
 import { UK_CITIES, BUSINESS_CATEGORIES } from '@/lib/uk-locations';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 interface Lead {
   id: string;
@@ -25,6 +26,8 @@ interface Lead {
 type StatusFilter = 'All' | 'Enriched' | 'Contact Missing' | 'New';
 
 export default function LeadSearchPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [businessType, setBusinessType] = useState('');
   const [city, setCity] = useState('');
   const [businessSearchTerm, setBusinessSearchTerm] = useState('');
@@ -42,7 +45,11 @@ export default function LeadSearchPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('All');
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 25;
+  const [focusedLeadId, setFocusedLeadId] = useState<string | null>(null);
   const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
+  const [actionMenuLeadId, setActionMenuLeadId] = useState<string | null>(null);
+  const [editingLead, setEditingLead] = useState<Lead | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [showManualEntryModal, setShowManualEntryModal] = useState(false);
   const [manualLead, setManualLead] = useState({
     name: '',
@@ -56,6 +63,20 @@ export default function LeadSearchPage() {
   useEffect(() => {
     fetchLeads();
   }, []);
+
+  useEffect(() => {
+    const leadId = searchParams.get('leadId');
+    if (leadId) {
+      setFocusedLeadId(leadId);
+      setStatusFilter('All');
+      setViewMode('table');
+      // Clear the query param so the focus does not re-lock on subsequent renders
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete('leadId');
+      const query = params.toString();
+      router.replace(query ? `/leads/search?${query}` : '/leads/search');
+    }
+  }, [searchParams, router]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -218,6 +239,17 @@ export default function LeadSearchPage() {
     }
   };
 
+  const handleDeleteLead = async (leadId: string, leadName: string) => {
+    if (!confirm(`Delete lead "${leadName}"? This cannot be undone.`)) return;
+    try {
+      await api.delete(`/leads/${leadId}`);
+      await fetchLeads();
+    } catch (error: any) {
+      console.error('Delete error:', error);
+      toast.error(error.response?.data?.message || 'Failed to delete lead');
+    }
+  };
+
   const filteredLeads = leads.filter((lead) => {
     if (statusFilter === 'All') return true;
 
@@ -260,6 +292,38 @@ export default function LeadSearchPage() {
     }
     return [1, 2, 3, '...', totalPages - 2, totalPages - 1, totalPages];
   })();
+
+  // Auto-jump to the page containing the focused lead
+  useEffect(() => {
+    if (!focusedLeadId) return;
+    const idx = filteredLeads.findIndex((l) => l.id === focusedLeadId);
+    if (idx === -1) {
+      setFocusedLeadId(null);
+      return;
+    }
+    const targetPage = Math.floor(idx / pageSize) + 1;
+    if (targetPage !== clampedPage) {
+      setCurrentPage(targetPage);
+      return;
+    }
+  }, [focusedLeadId, filteredLeads, clampedPage]);
+
+  // Scroll to the focused lead when visible
+  useEffect(() => {
+    if (!focusedLeadId) return;
+    const el =
+      document.getElementById(`lead-row-${focusedLeadId}`) ||
+      document.getElementById(`lead-card-${focusedLeadId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.add('ring-2', 'ring-aqua');
+      const timeout = setTimeout(() => {
+        el.classList.remove('ring-2', 'ring-aqua');
+        setFocusedLeadId(null);
+      }, 1500);
+      return () => clearTimeout(timeout);
+    }
+  }, [pagedLeads, focusedLeadId]);
 
   const getStatusBadge = (lead: Lead) => {
     const badges = [];
@@ -517,11 +581,16 @@ export default function LeadSearchPage() {
                         <th>EMAIL</th>
                         <th>STATUS</th>
                         <th>DATE SCRAPED</th>
+                        <th className="w-16"></th>
                       </tr>
                     </thead>
                     <tbody>
                       {pagedLeads.map((lead) => (
-                        <tr key={lead.id}>
+                        <tr
+                          key={lead.id}
+                          id={`lead-row-${lead.id}`}
+                          className={lead.id === focusedLeadId ? 'bg-yellow-50' : ''}
+                        >
                           <td>
                             <input
                               type="checkbox"
@@ -552,6 +621,39 @@ export default function LeadSearchPage() {
                           <td>{getStatusBadge(lead)}</td>
                           <td className="text-sm text-gray-500">
                             {format(new Date(lead.date_scraped), 'yyyy-MM-dd')}
+                          </td>
+                          <td className="relative">
+                            <button
+                              onClick={() =>
+                                setActionMenuLeadId((prev) => (prev === lead.id ? null : lead.id))
+                              }
+                              className="p-1 hover:bg-gray-100 rounded"
+                            >
+                              <MoreVertical className="w-4 h-4 text-gray-400" />
+                            </button>
+                            {actionMenuLeadId === lead.id && (
+                              <div className="absolute right-0 mt-1 w-36 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+                                <button
+                                  className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50"
+                                  onClick={() => {
+                                    setEditingLead(lead);
+                                    setShowEditModal(true);
+                                    setActionMenuLeadId(null);
+                                  }}
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+                                  onClick={() => {
+                                    setActionMenuLeadId(null);
+                                    handleDeleteLead(lead.id, lead.name);
+                                  }}
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -605,15 +707,52 @@ export default function LeadSearchPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {pagedLeads.map((lead) => (
-              <div key={lead.id} className="card hover:shadow-lg transition-shadow cursor-pointer">
+              <div
+                key={lead.id}
+                id={`lead-card-${lead.id}`}
+                className={`card hover:shadow-lg transition-shadow cursor-pointer ${lead.id === focusedLeadId ? 'bg-yellow-50' : ''}`}
+              >
                 <div className="flex items-start justify-between mb-3">
                   <h3 className="font-bold text-lg">{lead.name}</h3>
-                  <input
-                    type="checkbox"
-                    checked={selectedLeads.has(lead.id)}
-                    onChange={() => toggleLeadSelection(lead.id)}
-                    className="w-4 h-4 text-aqua rounded"
-                  />
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedLeads.has(lead.id)}
+                      onChange={() => toggleLeadSelection(lead.id)}
+                      className="w-4 h-4 text-aqua rounded"
+                    />
+                    <button
+                      onClick={() =>
+                        setActionMenuLeadId((prev) => (prev === lead.id ? null : lead.id))
+                      }
+                      className="p-1 hover:bg-gray-100 rounded"
+                    >
+                      <MoreVertical className="w-4 h-4 text-gray-400" />
+                    </button>
+                    {actionMenuLeadId === lead.id && (
+                      <div className="absolute right-2 top-10 w-36 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+                        <button
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50"
+                          onClick={() => {
+                            setEditingLead(lead);
+                            setShowEditModal(true);
+                            setActionMenuLeadId(null);
+                          }}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+                          onClick={() => {
+                            setActionMenuLeadId(null);
+                            handleDeleteLead(lead.id, lead.name);
+                          }}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <p className="text-sm text-gray-600 mb-2">{lead.business_type}</p>
                 <p className="text-sm text-gray-500 mb-4">{lead.city}</p>
@@ -650,6 +789,138 @@ export default function LeadSearchPage() {
               <Trash2 className="w-4 h-4" />
               <span>Delete</span>
             </button>
+          </div>
+        )}
+
+        {/* Edit Lead Modal */}
+        {showEditModal && editingLead && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-2xl w-full p-6">
+              <h2 className="text-2xl font-bold mb-4">Edit Lead</h2>
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (!editingLead) return;
+                  try {
+                    await api.put(`/leads/${editingLead.id}`, {
+                      name: editingLead.name,
+                      email: editingLead.email,
+                      phone: editingLead.phone,
+                      business_type: editingLead.business_type,
+                      city: editingLead.city,
+                      website: editingLead.website,
+                      status: editingLead.status,
+                    });
+                    setShowEditModal(false);
+                    setEditingLead(null);
+                    await fetchLeads();
+                  } catch (error: any) {
+                    console.error('Update error:', error);
+                    toast.error(error.response?.data?.message || 'Failed to update lead');
+                  }
+                }}
+              >
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Business Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={editingLead.name}
+                      onChange={(e) => setEditingLead({ ...editingLead, name: e.target.value })}
+                      className="input w-full"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Business Type *
+                    </label>
+                    <input
+                      type="text"
+                      value={editingLead.business_type}
+                      onChange={(e) =>
+                        setEditingLead({ ...editingLead, business_type: e.target.value })
+                      }
+                      className="input w-full"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      City *
+                    </label>
+                    <input
+                      type="text"
+                      value={editingLead.city}
+                      onChange={(e) => setEditingLead({ ...editingLead, city: e.target.value })}
+                      className="input w-full"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      value={editingLead.email || ''}
+                      onChange={(e) => setEditingLead({ ...editingLead, email: e.target.value })}
+                      className="input w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Phone
+                    </label>
+                    <input
+                      type="tel"
+                      value={editingLead.phone || ''}
+                      onChange={(e) => setEditingLead({ ...editingLead, phone: e.target.value })}
+                      className="input w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Website
+                    </label>
+                    <input
+                      type="url"
+                      value={editingLead.website || ''}
+                      onChange={(e) => setEditingLead({ ...editingLead, website: e.target.value })}
+                      className="input w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Status
+                    </label>
+                    <input
+                      type="text"
+                      value={editingLead.status}
+                      onChange={(e) => setEditingLead({ ...editingLead, status: e.target.value })}
+                      className="input w-full"
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowEditModal(false);
+                      setEditingLead(null);
+                    }}
+                    className="btn btn-secondary"
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn btn-primary">
+                    Save Changes
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         )}
 
