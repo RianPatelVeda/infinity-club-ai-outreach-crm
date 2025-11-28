@@ -103,21 +103,34 @@ export default function DashboardPage() {
       ).length || 0;
 
       // Count meetings from kanban (Potential Partner + Confirmed Partner stages)
-      const { data: kanbanLeads } = await supabase
-        .from('lead_kanban')
-        .select('stage_id, moved_at, kanban_stages(name)')
-        .or('kanban_stages.name.eq.Potential Partner,kanban_stages.name.eq.Confirmed Partner')
-        .gte('moved_at', oneWeekAgo.toISOString());
+      // First get the stage IDs for partner stages
+      const { data: partnerStages } = await supabase
+        .from('kanban_stages')
+        .select('id')
+        .in('name', ['Potential Partner', 'Confirmed Partner']);
 
-      const { data: previousKanbanLeads } = await supabase
-        .from('lead_kanban')
-        .select('stage_id, moved_at, kanban_stages(name)')
-        .or('kanban_stages.name.eq.Potential Partner,kanban_stages.name.eq.Confirmed Partner')
-        .gte('moved_at', twoWeeksAgo.toISOString())
-        .lt('moved_at', oneWeekAgo.toISOString());
+      const partnerStageIds = partnerStages?.map(s => s.id) || [];
 
-      const currentMeetings = kanbanLeads?.length || 0;
-      const previousMeetings = previousKanbanLeads?.length || 0;
+      let currentMeetings = 0;
+      let previousMeetings = 0;
+
+      if (partnerStageIds.length > 0) {
+        const { data: kanbanLeads } = await supabase
+          .from('lead_kanban')
+          .select('stage_id, moved_at')
+          .in('stage_id', partnerStageIds)
+          .gte('moved_at', oneWeekAgo.toISOString());
+
+        const { data: previousKanbanLeads } = await supabase
+          .from('lead_kanban')
+          .select('stage_id, moved_at')
+          .in('stage_id', partnerStageIds)
+          .gte('moved_at', twoWeeksAgo.toISOString())
+          .lt('moved_at', oneWeekAgo.toISOString());
+
+        currentMeetings = kanbanLeads?.length || 0;
+        previousMeetings = previousKanbanLeads?.length || 0;
+      }
 
       setStats({
         newLeads: currentNew,
