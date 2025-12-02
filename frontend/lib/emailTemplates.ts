@@ -467,8 +467,36 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
                                 <p style="margin-top: 15px; color: #666666; font-size: 14px;">Or reply to this email to schedule a quick chat</p>
                             </div>
 
+                            <div style="margin-top: 40px;">
+                                <h2>Want to see it in action?</h2>
+
+                                <div class="social-links">
+                                    <div style="margin-bottom: 12px;">
+                                        <strong>🌐 Website:</strong>
+                                        <a href="https://www.infinityclub.com" class="social-link">www.infinityclub.com</a>
+                                    </div>
+                                    <div>
+                                        <strong>📸 Instagram:</strong>
+                                        <a href="https://instagram.com/infinityclub_com" class="social-link">@infinityclub_com</a>
+                                    </div>
+                                </div>
+
+                                <p style="text-align: center; font-size: 16px; margin-top: 25px;">
+                                    We're on a mission to <span class="hashtag">#KeepThePoundLocal</span> – powering the local economy.
+                                </p>
+                            </div>
+
+                            <div class="signature">
+                                <p style="margin: 0 0 5px 0;">Kind Regards,</p>
+                                <p style="margin: 0; font-weight: 600; font-size: 16px;">Olivia</p>
+                                <p style="margin: 5px 0 0 0; color: #81D8D0;">Client Relations Manager</p>
+                            </div>
+
+
                         </td>
                     </tr>
+
+                    
 
                     <!-- Footer -->
                     <tr>
