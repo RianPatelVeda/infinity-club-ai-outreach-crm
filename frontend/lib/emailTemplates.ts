@@ -166,52 +166,52 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
         <tr>
             <td align="center" style="padding: 20px 0;">
-                <table class="email-container" role="presentation" width="600" cellspacing="0" cellpadding="0" border="0">
+                <table class="email-container" role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
 
                     <!-- Header -->
                     <tr>
-                        <td class="header">
-                            <div class="logo">INFINITY CLUB</div>
+                        <td class="header" style="background-color: #81D8D0; padding: 40px 20px; text-align: center;">
+                            <div class="logo" style="font-size: 28px; font-weight: bold; color: #ffffff; letter-spacing: 1px;">INFINITY CLUB</div>
                             <div style="color: #ffffff; margin-top: 10px; font-size: 14px;">Powering Independent Businesses</div>
                         </td>
                     </tr>
 
                     <!-- Content -->
                     <tr>
-                        <td class="content">
+                        <td class="content" style="padding: 40px 30px; color: #333333; line-height: 1.6;">
                             <h1>Get Free Marketing & More Customers with Infinity Club</h1>
 
                             <p>Hey {name},</p>
 
-                            <div class="hook">
+                            <div class="hook" style="background-color: #81D8D0; color: #ffffff; padding: 25px; border-radius: 8px; margin: 25px 0; text-align: center; font-size: 20px; font-weight: 600; line-height: 1.4;">
                                 Want more customers. More loyalty. More visibility – all for free?
                             </div>
 
                             <p>Our Infinity Club members are searching for standout local businesses, and <strong>yours is exactly the kind they want to support.</strong></p>
 
-                            <div class="no-catch">
+                            <div class="no-catch" style="background-color: #fff9e6; border: 2px solid #ffcd3c; padding: 15px; border-radius: 8px; margin: 20px 0; text-align: center; font-weight: 600; color: #333333;">
                                 🎁 We want to promote your business for FREE<br>
                                 No fees. No contracts. No catch.
                             </div>
 
                             <h2>Here's what you'll get:</h2>
 
-                            <div class="benefits-grid">
-                                <div class="benefit-item">
-                                    <span class="benefit-icon">📱</span>
+                            <div class="benefits-grid" style="margin: 30px 0;">
+                                <div class="benefit-item" style="padding: 15px; margin-bottom: 12px; background-color: #f0fffe; border-left: 4px solid #81D8D0; border-radius: 4px;">
+                                    <span class="benefit-icon" style="font-size: 24px; margin-right: 10px;">📱</span>
                                     <strong>Free promotion</strong> on our app, website, socials & newsletter
                                 </div>
-                                <div class="benefit-item">
-                                    <span class="benefit-icon">👥</span>
+                                <div class="benefit-item" style="padding: 15px; margin-bottom: 12px; background-color: #f0fffe; border-left: 4px solid #81D8D0; border-radius: 4px;">
+                                    <span class="benefit-icon" style="font-size: 24px; margin-right: 10px;">👥</span>
                                     Access to our <strong>rapidly growing member base</strong>
                                 </div>
-                                
-                                <div class="benefit-item">
-                                    <span class="benefit-icon">📈</span>
+
+                                <div class="benefit-item" style="padding: 15px; margin-bottom: 12px; background-color: #f0fffe; border-left: 4px solid #81D8D0; border-radius: 4px;">
+                                    <span class="benefit-icon" style="font-size: 24px; margin-right: 10px;">📈</span>
                                     More <strong>footfall, stronger loyalty</strong>, and higher visibility at zero cost
                                 </div>
-                                <div class="benefit-item">
-                                    <span class="benefit-icon">🤝</span>
+                                <div class="benefit-item" style="padding: 15px; margin-bottom: 12px; background-color: #f0fffe; border-left: 4px solid #81D8D0; border-radius: 4px;">
+                                    <span class="benefit-icon" style="font-size: 24px; margin-right: 10px;">🤝</span>
                                     A <strong>loyal community</strong> of locals ready to back independents
                                 </div>
                             </div>
@@ -229,31 +229,31 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
                                 This is your moment to get seen. Don't let your competitors take the spotlight.
                             </p>
 
-                            <div class="cta-section">
-                                <a href="https://infinityclub.com/partners" class="cta-button">🚀 Register Your Business Today</a>
+                            <div class="cta-section" style="text-align: center; background-color: #f9f9f9; margin: 30px -30px 0 -30px; padding: 40px 30px;">
+                                <a href="https://infinityclub.com/partners" class="cta-button" style="display: inline-block; background-color: #81D8D0; color: #ffffff; text-decoration: none; padding: 18px 45px; border-radius: 8px; font-weight: 600; margin: 20px 0; font-size: 18px;">🚀 Register Your Business Today</a>
                                 <p style="margin-top: 20px; color: #666666;">Claim your free spot now</p>
                             </div>
 
                             <div style="margin-top: 40px;">
                                 <h2>Want to see it in action?</h2>
 
-                                <div class="social-links">
+                                <div class="social-links" style="margin: 25px 0; padding: 20px; background-color: #f9f9f9; border-radius: 8px; text-align: center;">
                                     <div style="margin-bottom: 12px;">
                                         <strong>🌐 Website:</strong>
-                                        <a href="https://www.infinityclub.com" class="social-link">www.infinityclub.com</a>
+                                        <a href="https://www.infinityclub.com" class="social-link" style="color: #81D8D0; text-decoration: none; font-weight: 600; margin: 0 10px;">www.infinityclub.com</a>
                                     </div>
                                     <div>
                                         <strong>📸 Instagram:</strong>
-                                        <a href="https://instagram.com/infinityclub_com" class="social-link">@infinityclub_com</a>
+                                        <a href="https://instagram.com/infinityclub_com" class="social-link" style="color: #81D8D0; text-decoration: none; font-weight: 600; margin: 0 10px;">@infinityclub_com</a>
                                     </div>
                                 </div>
 
                                 <p style="text-align: center; font-size: 16px; margin-top: 25px;">
-                                    We're on a mission to <span class="hashtag">#KeepThePoundLocal</span> – powering the local economy.
+                                    We're on a mission to <span class="hashtag" style="color: #81D8D0; font-weight: 600;">#KeepThePoundLocal</span> – powering the local economy.
                                 </p>
                             </div>
 
-                            <div class="signature">
+                            <div class="signature" style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #eeeeee;">
                                 <p style="margin: 0 0 5px 0;">Kind Regards,</p>
                                 <p style="margin: 0; font-weight: 600; font-size: 16px;">Olivia</p>
                                 <p style="margin: 5px 0 0 0; color: #81D8D0;">Client Relations Manager</p>
@@ -264,7 +264,7 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
 
                     <!-- Footer -->
                     <tr>
-                        <td class="footer">
+                        <td class="footer" style="background-color: #f9f9f9; padding: 30px; text-align: center; color: #666666; font-size: 14px; border-top: 1px solid #eeeeee;">
                             <p style="margin: 0 0 10px 0; font-weight: 600; color: #333333;">INFINITY CLUB</p>
                             <p style="margin: 0 0 5px 0;">Beck View Rd, Beverley HU17 0JT</p>
                             <p style="margin: 0 0 5px 0;">01482 205983</p>
@@ -402,19 +402,19 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
         <tr>
             <td align="center" style="padding: 20px 0;">
-                <table class="email-container" role="presentation" width="600" cellspacing="0" cellpadding="0" border="0">
+                <table class="email-container" role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
 
                     <!-- Header -->
                     <tr>
-                        <td class="header">
-                            <div class="logo">INFINITY CLUB</div>
+                        <td class="header" style="background-color: #81D8D0; padding: 40px 20px; text-align: center;">
+                            <div class="logo" style="font-size: 28px; font-weight: bold; color: #ffffff; letter-spacing: 1px;">INFINITY CLUB</div>
                             <div style="color: #ffffff; margin-top: 10px; font-size: 14px;">Keep The £ Local</div>
                         </td>
                     </tr>
 
                     <!-- Content -->
                     <tr>
-                        <td class="content">
+                        <td class="content" style="padding: 40px 30px; color: #333333; line-height: 1.6;">
                             <h1>A Christmas gift with real local power</h1>
 
                             <p>Dear <strong>{name}</strong>,</p>
@@ -437,7 +437,7 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
 
                             <p>We're the local discount and rewards movement putting independents first.</p>
 
-                            <p>Your employees save all year long across Hull & East Yorkshire's best local spots – coffee, hair, gyms, food, retail, and more – while backing our mission to <span class="hashtag">#KeepThePoundLocal</span>.</p>
+                            <p>Your employees save all year long across Hull & East Yorkshire's best local spots – coffee, hair, gyms, food, retail, and more – while backing our mission to <span class="hashtag" style="color: #81D8D0; font-weight: 600;">#KeepThePoundLocal</span>.</p>
 
                             <h2>Why it matters to your business:</h2>
 
@@ -470,23 +470,23 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
                             <div style="margin-top: 40px;">
                                 <h2>Want to see it in action?</h2>
 
-                                <div class="social-links">
+                                <div class="social-links" style="margin: 25px 0; padding: 20px; background-color: #f9f9f9; border-radius: 8px; text-align: center;">
                                     <div style="margin-bottom: 12px;">
                                         <strong>🌐 Website:</strong>
-                                        <a href="https://www.infinityclub.com" class="social-link">www.infinityclub.com</a>
+                                        <a href="https://www.infinityclub.com" class="social-link" style="color: #81D8D0; text-decoration: none; font-weight: 600; margin: 0 10px;">www.infinityclub.com</a>
                                     </div>
                                     <div>
                                         <strong>📸 Instagram:</strong>
-                                        <a href="https://instagram.com/infinityclub_com" class="social-link">@infinityclub_com</a>
+                                        <a href="https://instagram.com/infinityclub_com" class="social-link" style="color: #81D8D0; text-decoration: none; font-weight: 600; margin: 0 10px;">@infinityclub_com</a>
                                     </div>
                                 </div>
 
                                 <p style="text-align: center; font-size: 16px; margin-top: 25px;">
-                                    We're on a mission to <span class="hashtag">#KeepThePoundLocal</span> – powering the local economy.
+                                    We're on a mission to <span class="hashtag" style="color: #81D8D0; font-weight: 600;">#KeepThePoundLocal</span> – powering the local economy.
                                 </p>
                             </div>
 
-                            <div class="signature">
+                            <div class="signature" style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #eeeeee;">
                                 <p style="margin: 0 0 5px 0;">Kind Regards,</p>
                                 <p style="margin: 0; font-weight: 600; font-size: 16px;">Olivia</p>
                                 <p style="margin: 5px 0 0 0; color: #81D8D0;">Client Relations Manager</p>
@@ -500,7 +500,7 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
 
                     <!-- Footer -->
                     <tr>
-                        <td class="footer">
+                        <td class="footer" style="background-color: #f9f9f9; padding: 30px; text-align: center; color: #666666; font-size: 14px; border-top: 1px solid #eeeeee;">
                             <p style="margin: 0 0 10px 0; font-weight: 600; color: #333333;">INFINITY CLUB</p>
                             <p style="margin: 0 0 5px 0;">Beck View Rd, Beverley HU17 0JT</p>
                             <p style="margin: 0 0 5px 0;">01482 205983</p>
