@@ -190,7 +190,7 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
                             <p>Our Infinity Club members are searching for standout local businesses, and <strong>yours is exactly the kind they want to support.</strong></p>
 
                             <div class="no-catch" style="background-color: #fff9e6; border: 2px solid #ffcd3c; padding: 15px; border-radius: 8px; margin: 20px 0; text-align: center; font-weight: 600; color: #333333;">
-                                🎁 We want to promote your business for FREE<br>
+                                🎁 We want to promote your business for FREE<br>    
                                 No fees. No contracts. No catch.
                             </div>
 
