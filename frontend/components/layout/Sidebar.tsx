@@ -11,7 +11,8 @@ import {
   Settings,
   LogOut
 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { signOut } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 
 const navigation = [
@@ -28,7 +29,9 @@ export default function Sidebar() {
   const router = useRouter();
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    if (auth) {
+      await signOut(auth);
+    }
     router.push('/login');
   };
 

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { auth } from './firebase';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -9,13 +10,16 @@ export const api = axios.create({
   },
 });
 
-// Request interceptor to add auth token
+// Request interceptor to add Firebase auth token
 api.interceptors.request.use(
   async (config) => {
-    // Get token from localStorage or Supabase session
-    const token = localStorage.getItem('supabase.auth.token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    if (auth?.currentUser) {
+      try {
+        const token = await auth.currentUser.getIdToken();
+        config.headers.Authorization = `Bearer ${token}`;
+      } catch (error) {
+        console.error('Error getting Firebase token:', error);
+      }
     }
     return config;
   },
@@ -27,7 +31,7 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Handle unauthorized
+      // Handle unauthorized - redirect to login
       window.location.href = '/login';
     }
     return Promise.reject(error);

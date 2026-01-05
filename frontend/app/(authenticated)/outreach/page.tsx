@@ -7,7 +7,6 @@ import api from '@/lib/api';
 import toast from 'react-hot-toast';
 import { Send, Mail, Edit2, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
-import { EMAIL_TEMPLATES } from '@/lib/emailTemplates';
 
 interface Lead {
   id: string;
@@ -22,18 +21,43 @@ interface Lead {
   created_at: string;
 }
 
+interface EmailTemplate {
+  slug: string;
+  name: string;
+  subject: string;
+  category: string;
+}
+
 export default function OutreachPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
+  const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
   const [sending, setSending] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
 
   useEffect(() => {
     fetchLeads();
+    fetchTemplates();
   }, []);
+
+  const fetchTemplates = async () => {
+    setLoadingTemplates(true);
+    try {
+      const response = await api.get('/campaigns/templates');
+      if (response.data.success) {
+        setTemplates(response.data.templates);
+      }
+    } catch (error) {
+      console.error('Error fetching templates:', error);
+      toast.error('Failed to load email templates');
+    } finally {
+      setLoadingTemplates(false);
+    }
+  };
 
   const fetchLeads = async () => {
     setLoading(true);
@@ -132,7 +156,7 @@ export default function OutreachPage() {
       return;
     }
 
-    const template = EMAIL_TEMPLATES.find(t => t.id === selectedTemplate);
+    const template = templates.find(t => t.slug === selectedTemplate);
     if (!template) return;
 
     setSending(true);
@@ -140,9 +164,9 @@ export default function OutreachPage() {
       const response = await api.post('/campaigns/send', {
         leadIds: Array.from(selectedLeads),
         subject: template.subject,
-        content: template.html,
+        content: '',
         sendNow: true,
-        templateType: template.id === 'partner' ? 'partner_acquisition_email' : 'corporate_christmas_gift',
+        templateType: template.slug,
       });
 
       toast.success(`Campaign sent to ${selectedLeads.size} leads!`);
@@ -158,7 +182,7 @@ export default function OutreachPage() {
     }
   };
 
-  const selectedTemplateData = EMAIL_TEMPLATES.find(t => t.id === selectedTemplate);
+  const selectedTemplateData = templates.find(t => t.slug === selectedTemplate);
 
   return (
     <div>
@@ -282,10 +306,13 @@ export default function OutreachPage() {
                     value={selectedTemplate}
                     onChange={(e) => setSelectedTemplate(e.target.value)}
                     className="input"
+                    disabled={loadingTemplates}
                   >
-                    <option value="">Select a template...</option>
-                    {EMAIL_TEMPLATES.map((template) => (
-                      <option key={template.id} value={template.id}>
+                    <option value="">
+                      {loadingTemplates ? 'Loading templates...' : 'Select a template...'}
+                    </option>
+                    {templates.map((template) => (
+                      <option key={template.slug} value={template.slug}>
                         {template.name}
                       </option>
                     ))}

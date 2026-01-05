@@ -1,9 +1,18 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Get, Body } from '@nestjs/common';
 import { CampaignsService } from './campaigns.service';
 
 @Controller('campaigns')
 export class CampaignsController {
   constructor(private readonly campaignsService: CampaignsService) {}
+
+  @Get('templates')
+  async getTemplates() {
+    const templates = await this.campaignsService.getAvailableTemplates();
+    return {
+      success: true,
+      templates,
+    };
+  }
 
   @Post('send')
   async sendCampaign(

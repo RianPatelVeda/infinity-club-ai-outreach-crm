@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { SupabaseService } from '../common/supabase.service';
+import { FirebaseService } from '../common/firebase.service';
 import { EmailService } from './email.service';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -8,10 +9,11 @@ import * as path from 'path';
 export class CampaignsService {
   constructor(
     private supabaseService: SupabaseService,
+    private firebaseService: FirebaseService,
     private emailService: EmailService,
   ) {}
 
-  private loadTemplate(templateName: string): string {
+  private loadTemplateFromFile(templateName: string): string {
     // Use process.cwd() to get the backend folder, then go to templates
     const templatePath = path.join(
       process.cwd(),
@@ -24,6 +26,73 @@ export class CampaignsService {
     }
 
     return fs.readFileSync(templatePath, 'utf-8');
+  }
+
+  private async loadTemplate(
+    templateSlug: string,
+  ): Promise<{ html: string; subject: string } | null> {
+    // Try to load from Firestore first
+    const firestoreTemplate =
+      await this.firebaseService.getTemplateBySlug(templateSlug);
+
+    if (firestoreTemplate) {
+      console.log(`📧 Loaded template "${templateSlug}" from Firestore`);
+      return {
+        html: firestoreTemplate.html,
+        subject: firestoreTemplate.subject,
+      };
+    }
+
+    // Fall back to local file
+    console.log(
+      `📁 Template "${templateSlug}" not in Firestore, trying local file...`,
+    );
+    try {
+      const html = this.loadTemplateFromFile(templateSlug);
+      // Use hardcoded subjects for legacy templates
+      let subject = 'Infinity Club';
+      if (templateSlug === 'partner_acquisition_email') {
+        subject =
+          'Get Free Marketing & More Customers with Infinity Club – No Catch';
+      } else if (templateSlug === 'corporate_christmas_gift') {
+        subject = 'A Christmas gift with real local power';
+      }
+      return { html, subject };
+    } catch (error) {
+      console.error(`Failed to load template from file: ${error.message}`);
+      return null;
+    }
+  }
+
+  async getAvailableTemplates() {
+    // Try to get templates from Firestore
+    const templates = await this.firebaseService.getOutreachTemplates();
+
+    if (templates.length > 0) {
+      return templates.map((t) => ({
+        slug: t.slug,
+        name: t.name,
+        subject: t.subject,
+        category: t.category,
+      }));
+    }
+
+    // Fall back to hardcoded list
+    return [
+      {
+        slug: 'partner_acquisition_email',
+        name: 'Partner Acquisition',
+        subject:
+          'Get Free Marketing & More Customers with Infinity Club – No Catch',
+        category: 'crm_outreach',
+      },
+      {
+        slug: 'corporate_christmas_gift',
+        name: 'Corporate Christmas Gift',
+        subject: 'A Christmas gift with real local power',
+        category: 'crm_outreach',
+      },
+    ];
   }
 
   async createAndSendCampaign(
@@ -70,18 +139,14 @@ export class CampaignsService {
     let emailSubject = subject;
 
     if (templateType) {
-      try {
-        emailContent = this.loadTemplate(templateType);
-        // Set subject based on template type
-        if (templateType === 'partner_acquisition_email') {
-          emailSubject =
-            'Get Free Marketing & More Customers with Infinity Club – No Catch';
-        } else if (templateType === 'corporate_christmas_gift') {
-          emailSubject = 'A Christmas gift with real local power';
-        }
-      } catch (error) {
-        console.error(`Failed to load template: ${error.message}`);
-        // Fall back to provided content
+      const template = await this.loadTemplate(templateType);
+      if (template) {
+        emailContent = template.html;
+        emailSubject = template.subject;
+      } else {
+        console.warn(
+          `Template "${templateType}" not found, using provided content`,
+        );
       }
     }
 
@@ -140,7 +205,10 @@ export class CampaignsService {
         content: personalizedContent,
         metadata: success
           ? { template_type: templateType || 'custom' }
-          : { error: 'Failed to send email', template_type: templateType || 'custom' },
+          : {
+              error: 'Failed to send email',
+              template_type: templateType || 'custom',
+            },
       });
 
       if (success) {
