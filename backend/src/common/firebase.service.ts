@@ -36,6 +36,11 @@ export class FirebaseService {
       .get<string>('FIREBASE_PRIVATE_KEY')
       ?.replace(/\\n/g, '\n');
 
+    console.log('🔧 Firebase config check:');
+    console.log('  - Project ID:', projectId || 'MISSING');
+    console.log('  - Client Email:', clientEmail || 'MISSING');
+    console.log('  - Private Key:', privateKey ? `${privateKey.substring(0, 50)}...` : 'MISSING');
+
     if (!projectId || !clientEmail || !privateKey) {
       console.warn(
         '⚠️ Firebase credentials not found. Email templates will load from local files.',
@@ -69,13 +74,17 @@ export class FirebaseService {
 
   async verifyToken(idToken: string): Promise<admin.auth.DecodedIdToken | null> {
     if (!this.initialized) {
+      console.log('❌ Firebase not initialized, cannot verify token');
       return null;
     }
 
     try {
-      return await admin.auth().verifyIdToken(idToken);
-    } catch (error) {
-      console.error('Failed to verify token:', error);
+      console.log('🔍 Verifying token with project:', this.configService.get<string>('FIREBASE_PROJECT_ID'));
+      const decoded = await admin.auth().verifyIdToken(idToken);
+      console.log('✅ Token decoded successfully for:', decoded.email);
+      return decoded;
+    } catch (error: any) {
+      console.error('Failed to verify token:', error.code, error.message);
       return null;
     }
   }
