@@ -9,6 +9,8 @@ export class AuthController {
   @Public()
   @Get('verify')
   async verifyToken(@Headers('authorization') authorization: string) {
+    console.log('🔐 Auth verify request received');
+
     if (!authorization) {
       throw new UnauthorizedException('Missing authorization header');
     }
@@ -18,12 +20,39 @@ export class AuthController {
       throw new UnauthorizedException('Invalid authorization header format');
     }
 
-    const user = await this.firebaseService.verifyPortalAdmin(token);
+    // First verify the token
+    const decodedToken = await this.firebaseService.verifyToken(token);
+    if (!decodedToken) {
+      console.log('❌ Token verification failed');
+      return {
+        success: false,
+        isPortalAdmin: false,
+        error: 'Invalid token',
+      };
+    }
+    console.log('✅ Token verified for UID:', decodedToken.uid);
+
+    // Get user from Firestore
+    const user = await this.firebaseService.getUserFromFirestore(decodedToken.uid);
+    console.log('📄 Firestore user data:', JSON.stringify(user));
+
     if (!user) {
       return {
         success: false,
         isPortalAdmin: false,
-        error: 'Invalid token or insufficient permissions',
+        error: 'User not found in database',
+      };
+    }
+
+    // Check portal admin status
+    const isAdmin = user.portalAdmin === true || user.role === 'admin';
+    console.log(`🔑 Portal admin check - portalAdmin: ${user.portalAdmin}, role: ${user.role}, isAdmin: ${isAdmin}`);
+
+    if (!isAdmin) {
+      return {
+        success: false,
+        isPortalAdmin: false,
+        error: 'User does not have portal admin access',
       };
     }
 

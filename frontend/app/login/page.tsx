@@ -38,7 +38,9 @@ export default function LoginPage() {
       if (!response.data.success || !response.data.isPortalAdmin) {
         // Sign out if not a portal admin
         await auth.signOut();
-        throw new Error("Access denied. You must be a Portal Admin to access this CRM.");
+        const errorMsg = response.data.error || "Access denied. You must be a Portal Admin to access this CRM.";
+        console.log('Backend response:', response.data);
+        throw new Error(errorMsg);
       }
 
       toast.success("Welcome to Infinity Club CRM!");
