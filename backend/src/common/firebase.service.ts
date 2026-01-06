@@ -138,6 +138,38 @@ export class FirebaseService {
     console.log('  - ENV Client Email:', clientEmail ? `SET ("${clientEmail}")` : 'MISSING');
     console.log('  - ENV Private Key:', privateKey ? `SET (${privateKey.length} chars, starts: ${privateKey.substring(0, 20)}...)` : 'MISSING');
 
+    // Lazy initialization - retry if not initialized but we have credentials
+    if (!this.initialized && projectId && clientEmail && privateKey) {
+      console.log('🔄 Attempting lazy initialization...');
+      try {
+        // Process private key
+        let processedKey = privateKey;
+        if (processedKey.includes('\\n')) {
+          processedKey = processedKey.replace(/\\n/g, '\n');
+        }
+
+        // If app exists, use it; otherwise create new
+        if (admin.apps.length === 0) {
+          admin.initializeApp({
+            credential: admin.credential.cert({
+              projectId,
+              clientEmail,
+              privateKey: processedKey,
+            }),
+          });
+          console.log('✅ Lazy init: Firebase app created');
+        } else {
+          console.log('ℹ️ Lazy init: Using existing Firebase app');
+        }
+
+        this.db = admin.firestore();
+        this.initialized = true;
+        console.log('✅ Lazy init: Firestore connected');
+      } catch (error: any) {
+        console.error('❌ Lazy init failed:', error.message);
+      }
+    }
+
     if (!this.initialized) {
       console.log('❌ Firebase not initialized, cannot verify token');
       return null;
