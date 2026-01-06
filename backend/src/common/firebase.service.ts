@@ -52,6 +52,15 @@ export class FirebaseService {
         privateKey = privateKey.slice(1, -1);
       }
 
+      // Decode base64 if the value doesn't look like a PEM yet
+      if (!privateKey.includes('-----BEGIN')) {
+        const decodedKey = Buffer.from(privateKey, 'base64').toString('utf8');
+        if (decodedKey.includes('-----BEGIN')) {
+          console.log('  - Decoding base64 private key');
+          privateKey = decodedKey;
+        }
+      }
+
       // Replace escaped newlines with actual newlines
       if (privateKey.includes('\\n')) {
         console.log('  - Converting escaped newlines');
