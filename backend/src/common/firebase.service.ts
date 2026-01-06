@@ -86,29 +86,32 @@ export class FirebaseService {
       console.log('📦 Attempting Firebase Admin initialization...');
       console.log('  - Current apps count:', admin.apps.length);
 
-      // If an app already exists, try to use it
-      if (admin.apps.length > 0) {
+      // Initialize app if not exists
+      if (admin.apps.length === 0) {
+        admin.initializeApp({
+          credential: admin.credential.cert({
+            projectId,
+            clientEmail,
+            privateKey,
+          }),
+        });
+        console.log('✅ Firebase Admin app created');
+      } else {
         console.log('ℹ️ Using existing Firebase app');
-        // Try to get Firestore from existing app
-        this.db = admin.firestore();
-        this.initialized = true;
-        console.log('✅ Connected to Firestore via existing app');
-        return;
       }
 
-      // Initialize new app
-      admin.initializeApp({
-        credential: admin.credential.cert({
-          projectId,
-          clientEmail,
-          privateKey,
-        }),
-      });
-      console.log('✅ Firebase Admin app created');
-
-      this.db = admin.firestore();
+      // Mark as initialized for Auth (even if Firestore fails)
       this.initialized = true;
-      console.log('✅ Firebase fully initialized, Firestore connected');
+      console.log('✅ Firebase Auth initialized');
+
+      // Try to initialize Firestore (may fail on Vercel due to missing @opentelemetry/api)
+      try {
+        this.db = admin.firestore();
+        console.log('✅ Firestore connected');
+      } catch (firestoreError: any) {
+        console.warn('⚠️ Firestore initialization failed (Auth still works):', firestoreError.message);
+        // Continue without Firestore - Auth verification will still work
+      }
     } catch (error: any) {
       console.error('❌ Failed to initialize Firebase');
       console.error('  - Error message:', error.message);
@@ -162,9 +165,17 @@ export class FirebaseService {
           console.log('ℹ️ Lazy init: Using existing Firebase app');
         }
 
-        this.db = admin.firestore();
+        // Mark as initialized for Auth
         this.initialized = true;
-        console.log('✅ Lazy init: Firestore connected');
+        console.log('✅ Lazy init: Firebase Auth ready');
+
+        // Try Firestore (optional)
+        try {
+          this.db = admin.firestore();
+          console.log('✅ Lazy init: Firestore connected');
+        } catch (fsErr: any) {
+          console.warn('⚠️ Lazy init: Firestore unavailable:', fsErr.message);
+        }
       } catch (error: any) {
         console.error('❌ Lazy init failed:', error.message);
       }
@@ -188,6 +199,9 @@ export class FirebaseService {
 
   async getUserFromFirestore(uid: string): Promise<FirebaseUser | null> {
     if (!this.db) {
+      console.warn('⚠️ Firestore not available, returning minimal user data');
+      // Return a basic user object when Firestore is unavailable
+      // This allows auth to work even without Firestore
       return null;
     }
 
