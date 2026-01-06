@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Header from '@/components/layout/Header';
-import { supabase } from '@/lib/supabase';
 import api from '@/lib/api';
 import { ArrowUp, ArrowDown, Plus, MoreVertical } from 'lucide-react';
 import Link from 'next/link';
@@ -70,74 +69,65 @@ export default function DashboardPage() {
       const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
 
-      // Fetch recent leads for display
-      const { data: allLeads, error: leadsError } = await supabase
-        .from('leads')
-        .select('*')
-        .order('created_at', { ascending: false });
+      // Use backend API instead of direct Supabase calls
+      const [leadsRes, stagesRes, kanbanRes] = await Promise.all([
+        api.get('/analytics/leads'),
+        api.get('/analytics/kanban-stages'),
+        api.get('/analytics/lead-kanban'),
+      ]);
 
-      if (leadsError) throw leadsError;
-      setLeads(allLeads || []);
+      const allLeads = leadsRes.data || [];
+      const kanbanStages = stagesRes.data || [];
+      const leadKanban = kanbanRes.data || [];
 
-      // Fetch current week stats
-      const { data: currentWeekLeads } = await supabase
-        .from('leads')
-        .select('status, enrichment_status, created_at')
-        .gte('created_at', oneWeekAgo.toISOString());
+      setLeads(allLeads);
 
-      // Fetch previous week stats
-      const { data: previousWeekLeads } = await supabase
-        .from('leads')
-        .select('status, enrichment_status, created_at')
-        .gte('created_at', twoWeeksAgo.toISOString())
-        .lt('created_at', oneWeekAgo.toISOString());
+      // Filter leads by date ranges
+      const currentWeekLeads = allLeads.filter((l: Lead) =>
+        new Date(l.created_at) >= oneWeekAgo
+      );
+      const previousWeekLeads = allLeads.filter((l: Lead) =>
+        new Date(l.created_at) >= twoWeeksAgo && new Date(l.created_at) < oneWeekAgo
+      );
 
       // Calculate current stats
-      const currentNew = currentWeekLeads?.filter(l => l.status === 'new').length || 0;
-      const currentEnriched = currentWeekLeads?.filter(l =>
+      const currentNew = currentWeekLeads.filter((l: Lead) => l.status === 'new').length;
+      const currentEnriched = currentWeekLeads.filter((l: Lead) =>
         l.enrichment_status?.email_verified || l.enrichment_status?.phone_verified
-      ).length || 0;
-      const currentEngaged = currentWeekLeads?.filter(l =>
+      ).length;
+      const currentEngaged = currentWeekLeads.filter((l: Lead) =>
         ['contacted', 'replied', 'in-progress'].includes(l.status)
-      ).length || 0;
+      ).length;
 
       // Calculate previous stats
-      const previousNew = previousWeekLeads?.filter(l => l.status === 'new').length || 0;
-      const previousEnriched = previousWeekLeads?.filter(l =>
+      const previousNew = previousWeekLeads.filter((l: Lead) => l.status === 'new').length;
+      const previousEnriched = previousWeekLeads.filter((l: Lead) =>
         l.enrichment_status?.email_verified || l.enrichment_status?.phone_verified
-      ).length || 0;
-      const previousEngaged = previousWeekLeads?.filter(l =>
+      ).length;
+      const previousEngaged = previousWeekLeads.filter((l: Lead) =>
         ['contacted', 'replied', 'in-progress'].includes(l.status)
-      ).length || 0;
+      ).length;
 
       // Count meetings from kanban (Potential Partner + Confirmed Partner stages)
-      // First get the stage IDs for partner stages
-      const { data: partnerStages } = await supabase
-        .from('kanban_stages')
-        .select('id')
-        .in('name', ['Potential Partner', 'Confirmed Partner']);
-
-      const partnerStageIds = partnerStages?.map(s => s.id) || [];
+      const partnerStageIds = kanbanStages
+        .filter((s: any) => ['Potential Partner', 'Confirmed Partner'].includes(s.name))
+        .map((s: any) => s.id);
 
       let currentMeetings = 0;
       let previousMeetings = 0;
 
       if (partnerStageIds.length > 0) {
-        const { data: kanbanLeads } = await supabase
-          .from('lead_kanban')
-          .select('stage_id, moved_at')
-          .in('stage_id', partnerStageIds)
-          .gte('moved_at', oneWeekAgo.toISOString());
+        const partnerKanbanLeads = leadKanban.filter((k: any) =>
+          partnerStageIds.includes(k.stage_id)
+        );
 
-        const { data: previousKanbanLeads } = await supabase
-          .from('lead_kanban')
-          .select('stage_id, moved_at')
-          .in('stage_id', partnerStageIds)
-          .gte('moved_at', twoWeeksAgo.toISOString())
-          .lt('moved_at', oneWeekAgo.toISOString());
+        currentMeetings = partnerKanbanLeads.filter((k: any) =>
+          k.moved_at && new Date(k.moved_at) >= oneWeekAgo
+        ).length;
 
-        currentMeetings = kanbanLeads?.length || 0;
-        previousMeetings = previousKanbanLeads?.length || 0;
+        previousMeetings = partnerKanbanLeads.filter((k: any) =>
+          k.moved_at && new Date(k.moved_at) >= twoWeeksAgo && new Date(k.moved_at) < oneWeekAgo
+        ).length;
       }
 
       setStats({

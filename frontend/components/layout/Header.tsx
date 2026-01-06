@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Search, Bell, User, MailCheck, AlertTriangle, Clock, Sparkles } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { supabase } from '@/lib/supabase';
+import api from '@/lib/api';
 import { useRouter } from 'next/navigation';
 
 interface HeaderProps {
@@ -50,11 +50,15 @@ export default function Header({ title, subtitle }: HeaderProps) {
     searchResults.campaigns.length > 0;
 
   useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-    };
-    getUser();
+    // Get user from localStorage (set during login)
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (e) {
+        console.error('Failed to parse stored user', e);
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -97,21 +101,9 @@ export default function Header({ title, subtitle }: HeaderProps) {
     try {
       const readSet = loadReadSet();
 
-      const [outreachRes, leadsRes] = await Promise.all([
-        supabase
-          .from('outreach_history')
-          .select('id, subject, delivered, bounced, opened, clicked, created_at, lead_id')
-          .order('created_at', { ascending: false })
-          .limit(12),
-        supabase
-          .from('leads')
-          .select('id, name, status, email, phone, created_at')
-          .order('created_at', { ascending: false })
-          .limit(12),
-      ]);
-
-      const outreach = outreachRes.data || [];
-      const leads = leadsRes.data || [];
+      // Use backend API instead of direct Supabase calls
+      const response = await api.get('/analytics/notifications');
+      const { outreach, leads } = response.data;
 
       const items: NotificationItem[] = [];
 
@@ -200,25 +192,13 @@ export default function Header({ title, subtitle }: HeaderProps) {
   const runSearch = async (term: string) => {
     setSearching(true);
     try {
-      const like = `%${term}%`;
-      const [leadsRes, campaignsRes] = await Promise.all([
-        supabase
-          .from('leads')
-          .select('id, name, email, status')
-          .or(`name.ilike.${like},email.ilike.${like}`)
-          .order('created_at', { ascending: false })
-          .limit(10),
-        supabase
-          .from('campaigns')
-          .select('id, name, subject')
-          .or(`name.ilike.${like},subject.ilike.${like}`)
-          .order('created_at', { ascending: false })
-          .limit(10),
-      ]);
+      // Use backend API instead of direct Supabase calls
+      const response = await api.get('/analytics/search', { params: { term } });
+      const { leads, campaigns } = response.data;
 
       setSearchResults({
-        leads: leadsRes.data || [],
-        campaigns: campaignsRes.data || [],
+        leads: leads || [],
+        campaigns: campaigns || [],
       });
       setSearchOpen(true);
     } catch (error) {

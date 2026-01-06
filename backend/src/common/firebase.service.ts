@@ -275,11 +275,15 @@ export class FirebaseService {
   }
 
   async getOutreachTemplates(): Promise<EmailTemplate[]> {
+    console.log('🔍 getOutreachTemplates called, db available:', !!this.db);
+
     if (!this.db) {
+      console.log('  - Firestore DB not available, returning empty array');
       return [];
     }
 
     try {
+      console.log('  - Querying emailTemplates collection...');
       const snapshot = await this.db
         .collection('emailTemplates')
         .where('isActive', '==', true)
@@ -287,12 +291,20 @@ export class FirebaseService {
         .orderBy('name', 'asc')
         .get();
 
-      return snapshot.docs.map((doc) => ({
+      console.log('  - Query returned', snapshot.docs.length, 'templates');
+      const templates = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       })) as EmailTemplate[];
-    } catch (error) {
-      console.error('Failed to fetch outreach templates:', error);
+
+      if (templates.length > 0) {
+        console.log('  - Template slugs:', templates.map(t => t.slug).join(', '));
+      }
+
+      return templates;
+    } catch (error: any) {
+      console.error('❌ Failed to fetch outreach templates:', error.message);
+      console.error('  - Error code:', error.code);
       return [];
     }
   }

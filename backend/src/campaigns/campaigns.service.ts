@@ -66,9 +66,14 @@ export class CampaignsService {
 
   async getAvailableTemplates() {
     // Try to get templates from Firestore
+    console.log('📋 Fetching available templates...');
+    console.log('  - Firestore initialized:', this.firebaseService.isInitialized());
+
     const templates = await this.firebaseService.getOutreachTemplates();
+    console.log('  - Templates from Firestore:', templates.length);
 
     if (templates.length > 0) {
+      console.log('  - Using Firestore templates:', templates.map(t => t.slug).join(', '));
       return templates.map((t) => ({
         slug: t.slug,
         name: t.name,
@@ -78,6 +83,7 @@ export class CampaignsService {
     }
 
     // Fall back to hardcoded list
+    console.log('  - Falling back to hardcoded templates');
     return [
       {
         slug: 'partner_acquisition_email',
@@ -157,24 +163,35 @@ export class CampaignsService {
         continue;
       }
 
-      // Replace variables in content - use {name} format
+      // Build placeholder variables - supports both legacy CRM and Website Admin Portal formats
+      const placeholderVariables: Record<string, string> = {
+        // Standard CRM variables (legacy format)
+        name: lead.name || '',
+        firstName: lead.name?.split(' ')[0] || '',
+        companyName: lead.name || '',
+        yourName: 'Infinity Club Team',
+
+        // Website Admin Portal placeholders (partner category)
+        business_name: lead.name || '',
+        contact_first_name: lead.name?.split(' ')[0] || '',
+        contact_name: lead.name || '',
+        contact_email: lead.email || '',
+
+        // System placeholders
+        current_year: new Date().getFullYear().toString(),
+        company_name: 'Infinity Club',
+        support_email: 'info@infinityclub.com',
+      };
+
+      // Replace variables in content
       const personalizedContent = this.emailService.replaceVariables(
         emailContent,
-        {
-          name: lead.name,
-          firstName: lead.name.split(' ')[0],
-          companyName: lead.name,
-          yourName: 'Infinity Club Team',
-        },
+        placeholderVariables,
       );
 
       const personalizedSubject = this.emailService.replaceVariables(
         emailSubject,
-        {
-          name: lead.name,
-          firstName: lead.name.split(' ')[0],
-          companyName: lead.name,
-        },
+        placeholderVariables,
       );
 
       // Send email with tracking

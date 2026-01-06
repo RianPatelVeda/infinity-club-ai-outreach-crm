@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Header from '@/components/layout/Header';
-import { supabase } from '@/lib/supabase';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
 import { Send, Mail, Edit2, Trash2 } from 'lucide-react';
@@ -62,14 +61,12 @@ export default function OutreachPage() {
   const fetchLeads = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('leads')
-        .select('*')
-        .not('email', 'is', null)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setLeads(data || []);
+      // Use backend API instead of direct Supabase calls
+      const response = await api.get('/analytics/leads');
+      // Filter leads with email
+      const allLeads = response.data || [];
+      const leadsWithEmail = allLeads.filter((lead: Lead) => lead.email);
+      setLeads(leadsWithEmail);
     } catch (error) {
       console.error('Error fetching leads:', error);
       toast.error('Failed to load leads');

@@ -60,9 +60,16 @@ export class EmailService {
   ): string {
     let result = content;
     Object.entries(variables).forEach(([key, value]) => {
-      // Support both {name} and [Name] style placeholders (case-insensitive)
-      const regex = new RegExp(`[\\[{]${key}[\\]}]`, 'gi');
-      result = result.replace(regex, value);
+      // Support {{key}}, {key}, and [key] formats (case-insensitive)
+      // This ensures compatibility with both Website Admin Portal ({{...}}) and legacy CRM templates
+      const patterns = [
+        new RegExp(`\\{\\{${key}\\}\\}`, 'gi'),  // {{key}} - Website Admin Portal format
+        new RegExp(`\\{${key}\\}`, 'gi'),         // {key} - Legacy CRM format
+        new RegExp(`\\[${key}\\]`, 'gi'),         // [key] - Alternative format
+      ];
+      patterns.forEach((regex) => {
+        result = result.replace(regex, value || '');
+      });
     });
     return result;
   }

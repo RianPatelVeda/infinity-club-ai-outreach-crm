@@ -162,4 +162,207 @@ export class AnalyticsService {
       topTypes,
     };
   }
+
+  async getNotifications() {
+    const supabase = this.supabaseService.getClient();
+
+    const [outreachRes, leadsRes] = await Promise.all([
+      supabase
+        .from('outreach_history')
+        .select('id, subject, delivered, bounced, opened, clicked, created_at, lead_id')
+        .order('created_at', { ascending: false })
+        .limit(12),
+      supabase
+        .from('leads')
+        .select('id, name, status, email, phone, created_at')
+        .order('created_at', { ascending: false })
+        .limit(12),
+    ]);
+
+    return {
+      outreach: outreachRes.data || [],
+      leads: leadsRes.data || [],
+    };
+  }
+
+  async search(term: string) {
+    const supabase = this.supabaseService.getClient();
+
+    if (!term) {
+      return { leads: [], campaigns: [] };
+    }
+
+    const like = `%${term}%`;
+
+    const [leadsRes, campaignsRes] = await Promise.all([
+      supabase
+        .from('leads')
+        .select('id, name, email, status')
+        .or(`name.ilike.${like},email.ilike.${like}`)
+        .order('created_at', { ascending: false })
+        .limit(10),
+      supabase
+        .from('campaigns')
+        .select('id, name, subject')
+        .or(`name.ilike.${like},subject.ilike.${like}`)
+        .order('created_at', { ascending: false })
+        .limit(10),
+    ]);
+
+    return {
+      leads: leadsRes.data || [],
+      campaigns: campaignsRes.data || [],
+    };
+  }
+
+  async getLeads() {
+    const supabase = this.supabaseService.getClient();
+
+    const { data, error } = await supabase
+      .from('leads')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching leads:', error);
+      return [];
+    }
+
+    return data || [];
+  }
+
+  async getKanbanStages() {
+    const supabase = this.supabaseService.getClient();
+
+    const { data, error } = await supabase
+      .from('kanban_stages')
+      .select('*')
+      .order('position', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching kanban stages:', error);
+      return [];
+    }
+
+    return data || [];
+  }
+
+  async getLeadKanban() {
+    const supabase = this.supabaseService.getClient();
+
+    const { data, error } = await supabase
+      .from('lead_kanban')
+      .select('*');
+
+    if (error) {
+      console.error('Error fetching lead_kanban:', error);
+      return [];
+    }
+
+    return data || [];
+  }
+
+  async setupKanbanStages() {
+    const supabase = this.supabaseService.getClient();
+
+    const newStages = [
+      { name: 'Not Contacted', position: 1, color: '#94A3B8' },
+      { name: 'Contacted - Christmas', position: 2, color: '#F59E0B' },
+      { name: 'Contacted - Partner', position: 3, color: '#8B5CF6' },
+      { name: 'Employee Benefit Business', position: 4, color: '#10B981' },
+      { name: 'Partner', position: 5, color: '#059669' },
+    ];
+
+    const { data: existingStages } = await supabase
+      .from('kanban_stages')
+      .select('*')
+      .order('position');
+
+    // If no stages exist, create them
+    if (!existingStages || existingStages.length === 0) {
+      await supabase.from('kanban_stages').insert(newStages);
+      return { success: true, message: 'Stages created' };
+    }
+
+    // Check if we have exactly the right stages
+    const expectedNames = newStages.map((s) => s.name).sort().join(',');
+    const currentNames = existingStages.map((s) => s.name).sort().join(',');
+
+    if (expectedNames !== currentNames) {
+      console.log('Updating kanban stages...');
+      await supabase.from('kanban_stages').delete().gte('position', 0);
+      await supabase.from('kanban_stages').insert(newStages);
+      return { success: true, message: 'Stages updated' };
+    }
+
+    return { success: true, message: 'Stages already exist' };
+  }
+
+  async moveLeadKanban(leadId: string, toStageId: string) {
+    const supabase = this.supabaseService.getClient();
+
+    const { error } = await supabase
+      .from('lead_kanban')
+      .update({ stage_id: toStageId, moved_at: new Date().toISOString() })
+      .eq('lead_id', leadId);
+
+    if (error) {
+      console.error('Error moving lead:', error);
+      throw new Error(`Failed to move lead: ${error.message}`);
+    }
+
+    return { success: true };
+  }
+
+  async getKanbanData() {
+    const supabase = this.supabaseService.getClient();
+
+    const { data, error } = await supabase
+      .from('lead_kanban')
+      .select(`
+        lead_id,
+        stage_id,
+        position,
+        leads (
+          id,
+          name,
+          email,
+          phone,
+          business_type,
+          city,
+          website,
+          notes,
+          created_at
+        )
+      `)
+      .order('position');
+
+    if (error) {
+      console.error('Error fetching kanban data:', error);
+      return [];
+    }
+
+    return data || [];
+  }
+
+  async getOutreachHistory(leadIds: string[]) {
+    const supabase = this.supabaseService.getClient();
+
+    if (leadIds.length === 0) {
+      return [];
+    }
+
+    const { data, error } = await supabase
+      .from('outreach_history')
+      .select('lead_id, type, subject, metadata, created_at, opened, clicked, bounced, delivered')
+      .in('lead_id', leadIds)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching outreach history:', error);
+      return [];
+    }
+
+    return data || [];
+  }
 }

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Header from '@/components/layout/Header';
-import { supabase } from '@/lib/supabase';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
 import { Mail, CheckCircle, Gift, Briefcase, Eye, MousePointerClick, XCircle } from 'lucide-react';
@@ -66,90 +65,42 @@ export default function KanbanPage() {
   };
 
   const setupStages = async () => {
-    // Define the 5 new stages
-    const newStages = [
-      { name: 'Not Contacted', position: 1, color: '#94A3B8' },
-      { name: 'Contacted - Christmas', position: 2, color: '#F59E0B' },
-      { name: 'Contacted - Partner', position: 3, color: '#8B5CF6' },
-      { name: 'Employee Benefit Business', position: 4, color: '#10B981' },
-      { name: 'Partner', position: 5, color: '#059669' },
-    ];
-
-    const { data: existingStages } = await supabase
-      .from('kanban_stages')
-      .select('*')
-      .order('position');
-
-    // If no stages exist, create them
-    if (!existingStages || existingStages.length === 0) {
-      await supabase.from('kanban_stages').insert(newStages);
-      return;
-    }
-
-    // Check if we have exactly the right stages
-    const expectedNames = newStages.map(s => s.name).sort().join(',');
-    const currentNames = existingStages.map(s => s.name).sort().join(',');
-
-    if (expectedNames !== currentNames) {
-      console.log('Updating kanban stages...');
-      // Delete ALL existing stages
-      await supabase.from('kanban_stages').delete().gte('position', 0);
-      // Insert new stages
-      await supabase.from('kanban_stages').insert(newStages);
-    }
+    // Use backend API to setup stages
+    await api.post('/analytics/kanban-stages/setup');
   };
 
   const fetchKanbanData = async () => {
-    // Fetch stages
-    const { data: stagesData, error: stagesError } = await supabase
-      .from('kanban_stages')
-      .select('*')
-      .order('position');
+    // Use backend API instead of direct Supabase calls
+    const [stagesRes, kanbanRes] = await Promise.all([
+      api.get('/analytics/kanban-stages'),
+      api.get('/analytics/kanban-data'),
+    ]);
 
-    if (stagesError) throw stagesError;
-    setStages(stagesData || []);
+    const stagesData = stagesRes.data || [];
+    const kanbanData = kanbanRes.data || [];
 
-    // Fetch leads with their kanban positions and outreach history
-    const { data: kanbanData, error: kanbanError } = await supabase
-      .from('lead_kanban')
-      .select(`
-        lead_id,
-        stage_id,
-        position,
-        leads (
-          id,
-          name,
-          email,
-          phone,
-          business_type,
-          city,
-          website,
-          notes,
-          created_at
-        )
-      `)
-      .order('position');
-
-    if (kanbanError) throw kanbanError;
+    setStages(stagesData);
 
     // Get outreach history for all leads
-    const leadIds = kanbanData?.map(k => k.lead_id) || [];
-    const { data: outreachData } = await supabase
-      .from('outreach_history')
-      .select('lead_id, type, subject, metadata, created_at, opened, clicked, bounced, delivered')
-      .in('lead_id', leadIds)
-      .order('created_at', { ascending: false });
+    const leadIds = kanbanData.map((k: any) => k.lead_id);
+    let outreachData: any[] = [];
+    if (leadIds.length > 0) {
+      const outreachRes = await api.get('/analytics/outreach-history', {
+        params: { leadIds: leadIds.join(',') },
+      });
+      outreachData = outreachRes.data || [];
+    }
 
     // Organize cards by stage
     const cardsByStage: Record<string, KanbanCard[]> = {};
-    stagesData?.forEach(stage => {
+    stagesData.forEach((stage: KanbanStage) => {
       cardsByStage[stage.id] = [];
     });
 
-    kanbanData?.forEach(item => {
+    kanbanData.forEach((item: any) => {
       if (item.leads) {
         const lead = item.leads as any;
-        const history = outreachData?.filter(h => h.lead_id === lead.id) || [];
+        const history = outreachData.filter((h: any) => h.lead_id === lead.id) || [];
 
         cardsByStage[item.stage_id]?.push({
           ...lead,
@@ -165,13 +116,8 @@ export default function KanbanPage() {
 
   const moveToStage = async (leadId: string, fromStageId: string, toStageId: string, stageName: string) => {
     try {
-      // Update in database
-      const { error } = await supabase
-        .from('lead_kanban')
-        .update({ stage_id: toStageId })
-        .eq('lead_id', leadId);
-
-      if (error) throw error;
+      // Use backend API instead of direct Supabase call
+      await api.put('/analytics/lead-kanban/move', { leadId, toStageId });
 
       // Update local state
       const fromCards = cards[fromStageId] || [];
