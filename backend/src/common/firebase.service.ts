@@ -84,18 +84,28 @@ export class FirebaseService {
 
     try {
       console.log('📦 Attempting Firebase Admin initialization...');
-      if (!admin.apps.length) {
-        admin.initializeApp({
-          credential: admin.credential.cert({
-            projectId,
-            clientEmail,
-            privateKey,
-          }),
-        });
-        console.log('✅ Firebase Admin app created');
-      } else {
-        console.log('ℹ️ Firebase Admin app already exists');
+      console.log('  - Current apps count:', admin.apps.length);
+
+      // If an app already exists, try to use it
+      if (admin.apps.length > 0) {
+        console.log('ℹ️ Using existing Firebase app');
+        // Try to get Firestore from existing app
+        this.db = admin.firestore();
+        this.initialized = true;
+        console.log('✅ Connected to Firestore via existing app');
+        return;
       }
+
+      // Initialize new app
+      admin.initializeApp({
+        credential: admin.credential.cert({
+          projectId,
+          clientEmail,
+          privateKey,
+        }),
+      });
+      console.log('✅ Firebase Admin app created');
+
       this.db = admin.firestore();
       this.initialized = true;
       console.log('✅ Firebase fully initialized, Firestore connected');
