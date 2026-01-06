@@ -1,3 +1,6 @@
+// Force Vercel to bundle @opentelemetry/api (required by @google-cloud/firestore)
+import "@opentelemetry/api";
+
 import { NestFactory } from "@nestjs/core";
 import { ExpressAdapter } from "@nestjs/platform-express";
 import { AppModule } from "../src/app.module";
