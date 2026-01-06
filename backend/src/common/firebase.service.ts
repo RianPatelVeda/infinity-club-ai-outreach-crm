@@ -114,13 +114,27 @@ export class FirebaseService {
   // ============ Authentication Methods ============
 
   async verifyToken(idToken: string): Promise<admin.auth.DecodedIdToken | null> {
+    // Request-time diagnostics - shows on EVERY request
+    console.log('🔍 Token verification request:');
+    console.log('  - Firebase initialized:', this.initialized);
+    console.log('  - Admin apps count:', admin.apps.length);
+    console.log('  - Firestore connected:', !!this.db);
+
+    // Log env vars at request time to see what's available
+    const projectId = process.env.FIREBASE_PROJECT_ID;
+    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+    console.log('  - ENV Project ID:', projectId ? `SET ("${projectId}")` : 'MISSING');
+    console.log('  - ENV Client Email:', clientEmail ? `SET ("${clientEmail}")` : 'MISSING');
+    console.log('  - ENV Private Key:', privateKey ? `SET (${privateKey.length} chars, starts: ${privateKey.substring(0, 20)}...)` : 'MISSING');
+
     if (!this.initialized) {
       console.log('❌ Firebase not initialized, cannot verify token');
       return null;
     }
 
     try {
-      console.log('🔍 Verifying token with project:', this.configService.get<string>('FIREBASE_PROJECT_ID'));
+      console.log('🔐 Verifying token with project:', this.configService.get<string>('FIREBASE_PROJECT_ID'));
       const decoded = await admin.auth().verifyIdToken(idToken);
       console.log('✅ Token decoded successfully for:', decoded.email);
       return decoded;
